@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { timer as TimerIcon } from "lucide-react";
+import { Timer as TimerIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const FIVE_MINUTES = 5 * 60; // seconds
@@ -72,3 +72,4 @@ export default function MeditationTimer() {
     </div>
   );
 }
+
