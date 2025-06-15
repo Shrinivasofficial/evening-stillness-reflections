@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Timer as TimerIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,8 +46,17 @@ export default function MeditationTimer() {
         <TimerIcon size={18} className="mr-1 text-primary/80" />
         5 Min Meditation
       </span>
-      <div className="text-3xl tabular-nums tracking-wide font-semibold mb-4 text-gray-700 select-none">
-        {formatTime(seconds)}
+      <div className="mb-4">
+        <div
+          className={`mx-auto flex items-center justify-center rounded-full transition-all duration-200
+            ${running ? "ring-2 ring-primary/50 animate-pulse" : ""}
+          `}
+          style={{ width: 90, height: 90 }}
+        >
+          <div className="text-3xl tabular-nums tracking-wide font-semibold text-gray-700 select-none">
+            {formatTime(seconds)}
+          </div>
+        </div>
       </div>
       <div className="flex gap-2">
         {running ? (
@@ -72,4 +80,3 @@ export default function MeditationTimer() {
     </div>
   );
 }
-
