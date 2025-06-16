@@ -1,144 +1,188 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { User } from "@supabase/supabase-js";
+import { LogOut, User as UserIcon } from "lucide-react";
+import { usePositiveNotification } from "@/hooks/usePositiveNotification";
+import PositiveNotification from "./PositiveNotification";
 
 export default function UserAuthPanel() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [userLoading, setUserLoading] = useState(true);
+  const { notification, showNotification, hideNotification } = usePositiveNotification();
 
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data?.user ?? null);
-      setUserLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+  React.useEffect(() => {
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      
+      if (event === 'SIGNED_IN') {
+        showNotification('Login successful');
+      } else if (event === 'SIGNED_OUT') {
+        showNotification('Signed out');
+      }
+    });
 
-  const handleAuth = async (e: React.FormEvent) => {
+    return () => subscription.unsubscribe();
+  }, [showNotification]);
+
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`
-          }
-        });
-        if (error) throw error;
-        alert("Check your email for verification link!");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/`
       }
-      setIsDialogOpen(false);
+    });
+
+    if (error) {
+      showNotification(error.message, 'info');
+    } else {
+      showNotification('Email verification sent');
       setEmail("");
       setPassword("");
-    } catch (error: any) {
-      alert(error.message);
     }
     setLoading(false);
   };
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      showNotification(error.message, 'info');
+    }
+    setLoading(false);
   };
 
-  if (userLoading) {
-    return (
-      <div className="h-8 w-24 bg-muted rounded animate-pulse" />
-    );
-  }
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
 
-  if (!user) {
+  if (user) {
     return (
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" className="rounded-full">
-            Login
+      <>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <UserIcon size={16} />
+            <span>{user.email}</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleSignOut}>
+            <LogOut size={16} className="mr-1" />
+            Sign Out
           </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{isSignUp ? "Sign Up" : "Sign In"}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleAuth} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Button type="submit" disabled={loading} className="w-full">
-                {loading ? "Loading..." : (isSignUp ? "Sign Up" : "Sign In")}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-sm"
-              >
-                {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+        </div>
+        <PositiveNotification
+          message={notification.message}
+          isVisible={notification.isVisible}
+          onClose={hideNotification}
+          type={notification.type}
+        />
+      </>
     );
   }
-
-  const display = user.user_metadata?.full_name || user.email;
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm text-gray-700">{display}</span>
-      <Button
-        variant="secondary"
-        className="rounded-full"
-        onClick={signOut}
-      >
-        Logout
-      </Button>
-    </div>
+    <>
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Welcome</CardTitle>
+          <CardDescription>
+            Sign in to your account or create a new one to start your reflection journey.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="signin" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="signin">Sign In</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="signin">
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signin-email">Email</Label>
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signin-password">Password</Label>
+                  <Input
+                    id="signin-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="signup">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Creating account..." : "Create Account"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+      <PositiveNotification
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+        type={notification.type}
+      />
+    </>
   );
 }

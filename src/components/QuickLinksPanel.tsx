@@ -1,9 +1,10 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { CalendarPlus, Download, Share } from "lucide-react";
+import { CalendarPlus } from "lucide-react";
 import SoftCard from "./SoftCard";
 import MeditationTimer from "./MeditationTimer";
+import MusicTracks from "./MusicTracks";
 
 export default function QuickLinksPanel({ onNew }: { onNew: () => void }) {
   return (
@@ -17,20 +18,7 @@ export default function QuickLinksPanel({ onNew }: { onNew: () => void }) {
           <CalendarPlus size={18} /> New Reflection
         </Button>
         <MeditationTimer />
-        <Button
-          variant="outline"
-          className="rounded-full flex items-center gap-2"
-          disabled
-        >
-          <Download size={18} /> Download Journal (PDF)
-        </Button>
-        <Button
-          variant="outline"
-          className="rounded-full flex items-center gap-2"
-          disabled
-        >
-          <Share size={18} /> Share / Feedback
-        </Button>
+        <MusicTracks />
       </div>
     </SoftCard>
   );

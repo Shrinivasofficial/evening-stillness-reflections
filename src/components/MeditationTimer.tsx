@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Timer as TimerIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,27 @@ export default function MeditationTimer() {
   const [running, setRunning] = useState(false);
   const interval = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Play notification sound when timer completes
+  const playNotificationSound = () => {
+    // Create a simple notification sound using Web Audio API
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  };
+
   // Start/pause timer
   useEffect(() => {
     if (running && seconds > 0) {
@@ -27,6 +49,7 @@ export default function MeditationTimer() {
     if (seconds === 0 && interval.current) {
       clearInterval(interval.current);
       setRunning(false);
+      playNotificationSound(); // Play sound when timer completes
     }
     return () => {
       if (interval.current) clearInterval(interval.current);
@@ -74,7 +97,7 @@ export default function MeditationTimer() {
       </div>
       {seconds === 0 && (
         <span className="absolute left-0 right-0 text-center text-green-600 pt-2 text-sm font-medium">
-          Session complete!
+          🙏 Session complete! Well done.
         </span>
       )}
     </div>
