@@ -1,12 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 export default function UserAuthPanel() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -14,36 +13,22 @@ export default function UserAuthPanel() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
 
-  // If Supabase environment variables are not configured, show a simple fallback
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return (
-      <div className="text-sm text-gray-500">
-        Authentication not configured
-      </div>
-    );
-  }
-
-  // Only import and use Supabase if environment variables are available
-  const { createClient } = require("@supabase/supabase-js");
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-  const [user, setUser] = React.useState<any>(null);
-  const [userLoading, setUserLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    // Get session/user info on mount
-    supabase.auth.getUser().then(({ data }: any) => {
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getUser().then(({ data }) => {
       setUser(data?.user ?? null);
       setUserLoading(false);
     });
-    // Listen for login/logout in any tab
-    const { data: listener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
-    return () => {
-      listener?.subscription?.unsubscribe();
-    };
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -55,6 +40,9 @@ export default function UserAuthPanel() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
         });
         if (error) throw error;
         alert("Check your email for verification link!");

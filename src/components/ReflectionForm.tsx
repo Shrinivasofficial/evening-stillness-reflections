@@ -21,7 +21,7 @@ type ReflectionEntry = {
 };
 
 type Props = {
-  onSave: (entry: ReflectionEntry) => void;
+  onSave: (entry: ReflectionEntry) => Promise<void>;
 };
 
 export default function ReflectionForm({ onSave }: Props) {
@@ -34,14 +34,25 @@ export default function ReflectionForm({ onSave }: Props) {
   const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    setTimeout(() => {
-      onSave({ date, mood, well, short, again, tags });
+    
+    try {
+      await onSave({ date, mood, well, short, again, tags });
+      // Reset form
+      setWell(""); 
+      setShort(""); 
+      setAgain(""); 
+      setTags([]); 
+      setMood(3); 
+      setDate(today);
+      alert("Reflection saved successfully!");
+    } catch (error) {
+      alert("Error saving reflection. Please try again.");
+    } finally {
       setSaving(false);
-      setWell(""); setShort(""); setAgain(""); setTags([]); setMood(3); setDate(today);
-    }, 600); // fake delay
+    }
   }
 
   const moodEmojis = ["😣", "😐", "🙂", "😊", "😌"];
@@ -149,7 +160,7 @@ export default function ReflectionForm({ onSave }: Props) {
         </div>
         {/* Save Button */}
         <div>
-          <Button type="submit" className="w-full rounded-full shadow-soft text-base py-2 px-8 disabled:opacity-60">
+          <Button type="submit" disabled={saving} className="w-full rounded-full shadow-soft text-base py-2 px-8 disabled:opacity-60">
             {saving ? "Saving..." : "Save Reflection"}
           </Button>
         </div>
