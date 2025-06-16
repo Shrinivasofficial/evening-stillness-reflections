@@ -1,24 +1,35 @@
 
 import React from "react";
-import { createClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function UserAuthPanel() {
+  // If Supabase environment variables are not configured, show a simple fallback
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return (
+      <div className="text-sm text-gray-500">
+        Authentication not configured
+      </div>
+    );
+  }
+
+  // Only import and use Supabase if environment variables are available
+  const { createClient } = require("@supabase/supabase-js");
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
   const [user, setUser] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     // Get session/user info on mount
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: any) => {
       setUser(data?.user ?? null);
       setLoading(false);
     });
     // Listen for login/logout in any tab
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setUser(session?.user ?? null);
     });
     return () => {
