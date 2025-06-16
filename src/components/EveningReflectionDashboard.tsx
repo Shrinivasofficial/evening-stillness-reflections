@@ -12,8 +12,8 @@ import { useReflections } from "../hooks/useReflections";
 export default function EveningReflectionDashboard() {
   const { reflections, loading, saveReflection, user } = useReflections();
 
-  function handleSave(entry: any) {
-    saveReflection(entry);
+  async function handleSave(entry: any) {
+    await saveReflection(entry);
   }
 
   function handleNew() {
