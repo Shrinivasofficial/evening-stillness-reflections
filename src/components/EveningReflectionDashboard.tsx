@@ -48,16 +48,16 @@ export default function EveningReflectionDashboard() {
             {/* Left Content */}
             <div className="space-y-12">
               <div className="space-y-8">
-                <h1 className="text-6xl md:text-7xl lg:text-8xl font-light text-slate-800 leading-tight tracking-tight" style={{ fontFamily: "'Crimson Text', serif" }}>
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-light text-slate-800 leading-tight tracking-tight" style={{ fontFamily: "'Crimson Text', serif" }}>
                   A Space for Your Mind, Body & Soul
                 </h1>
-                <p className="text-xl md:text-2xl text-slate-600 leading-relaxed font-light max-w-2xl" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <p className="text-md md:text-lg text-slate-600 leading-relaxed font-light max-w-2xl" style={{ fontFamily: "'Inter', sans-serif" }}>
                   Join thousands of people embracing mindfulness and reflection. 
                   Discover guided meditation and peaceful moments designed for inner clarity.
                 </p>
               </div>
               
-              <div className="pt-8">
+              <div className="pt-2">
                 <Button 
                   onClick={() => setShowAuth(true)}
                   size="lg"
