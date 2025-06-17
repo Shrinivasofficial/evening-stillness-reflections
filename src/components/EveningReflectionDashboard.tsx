@@ -1,4 +1,3 @@
-
 import React from "react";
 import WelcomeSection from "./WelcomeSection";
 import ReflectionForm from "./ReflectionForm";
@@ -7,6 +6,7 @@ import WeeklySummary from "./WeeklySummary";
 import QuickLinksPanel from "./QuickLinksPanel";
 import Footer from "./Footer";
 import UserAuthPanel from "./UserAuthPanel";
+import BuddhaAnimation from "./BuddhaAnimation";
 import { useReflections } from "../hooks/useReflections";
 
 export default function EveningReflectionDashboard() {
@@ -22,18 +22,32 @@ export default function EveningReflectionDashboard() {
 
   if (!user) {
     return (
-      <div className="font-sans bg-white min-h-screen">
-        <header className="w-full px-4 py-4 border-b border-gray-200 bg-white flex items-center justify-between mb-4">
-          <div className="font-semibold text-xl tracking-tight text-gray-800">Evening Reflection Journal</div>
+      <div className="font-sans bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+        <header className="w-full px-6 py-6 flex items-center justify-end">
           <UserAuthPanel />
         </header>
-        <div className="container max-w-4xl mx-auto py-20 px-6 text-center">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to Evening Reflection Journal</h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Reflect on your day, track your mood, and build meaningful habits through daily journaling.
-          </p>
-          <p className="text-gray-500">Please sign in to start your reflection journey.</p>
+        
+        <div className="container max-w-4xl mx-auto py-20 px-6 text-center min-h-[80vh] flex flex-col items-center justify-center">
+          <div className="mb-12">
+            <BuddhaAnimation />
+          </div>
+          
+          <div className="space-y-8 max-w-2xl">
+            <h1 className="text-5xl md:text-6xl font-light text-gray-800 leading-tight">
+              Evening Reflection
+            </h1>
+            <p className="text-xl text-gray-600 font-light leading-relaxed">
+              A minimalist space for clarity, stillness, and soft resets.
+            </p>
+            
+            <div className="pt-8">
+              <blockquote className="text-lg text-gray-500 italic font-light">
+                "Clarity comes from reflection. Power comes from stillness."
+              </blockquote>
+            </div>
+          </div>
         </div>
+        
         <Footer />
       </div>
     );
