@@ -6,9 +6,9 @@ export default function BuddhaAnimation() {
     <div className="flex justify-center items-center py-8">
       <div className="relative">
         {/* Buddha silhouette with breathing animation */}
-        <div className="w-32 h-32 bg-gradient-to-b from-amber-100 to-amber-200 rounded-full animate-pulse">
+        <div className="w-32 h-32 bg-gradient-to-b from-sky-100 to-blue-100 rounded-full animate-pulse shadow-inner">
           <svg
-            className="w-full h-full text-amber-600 opacity-80"
+            className="w-full h-full text-sky-600/80 opacity-90"
             fill="currentColor"
             viewBox="0 0 100 100"
             xmlns="http://www.w3.org/2000/svg"
@@ -23,10 +23,10 @@ export default function BuddhaAnimation() {
         </div>
         
         {/* Floating particles around Buddha */}
-        <div className="absolute -top-2 -left-2 w-2 h-2 bg-amber-300 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-        <div className="absolute -top-1 -right-3 w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute -bottom-2 -left-3 w-1 h-1 bg-amber-200 rounded-full animate-bounce" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute -bottom-1 -right-2 w-2 h-2 bg-amber-300 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
+        <div className="absolute -top-2 -left-2 w-2 h-2 bg-sky-300/60 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+        <div className="absolute -top-1 -right-3 w-1.5 h-1.5 bg-blue-300/60 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute -bottom-2 -left-3 w-1 h-1 bg-sky-200/60 rounded-full animate-bounce" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute -bottom-1 -right-2 w-2 h-2 bg-blue-200/60 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
       </div>
     </div>
   );

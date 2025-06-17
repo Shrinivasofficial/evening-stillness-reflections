@@ -25,57 +25,60 @@ export default function EveningReflectionDashboard() {
 
   if (!user) {
     return (
-      <div className="font-serif bg-white min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/30 to-blue-50/20">
         {/* Header */}
-        <header className="w-full px-6 py-6 flex items-center justify-between">
+        <header className="w-full px-8 py-6 flex items-center justify-between bg-white/80 backdrop-blur-sm border-b border-sky-100">
           <div className="flex items-center">
-            <h1 className="text-3xl font-light text-gray-800 tracking-wide">Peace</h1>
+            <h1 className="text-3xl font-light text-slate-800 tracking-wide" style={{ fontFamily: "'Crimson Text', serif" }}>
+              Peace
+            </h1>
           </div>
           
           <Button 
             onClick={() => setShowAuth(true)}
-            className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white px-8 py-3 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
+            className="px-8 py-3 rounded-full font-medium shadow-lg"
           >
             Start Reflecting
           </Button>
         </header>
         
         {/* Main Content */}
-        <div className="container max-w-7xl mx-auto px-6 py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center min-h-[70vh]">
+        <div className="container max-w-7xl mx-auto px-8 py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center min-h-[70vh]">
             {/* Left Content */}
-            <div className="space-y-10">
+            <div className="space-y-12">
               <div className="space-y-8">
-                <h1 className="text-6xl md:text-7xl lg:text-8xl font-light text-gray-900 leading-tight tracking-tight">
+                <h1 className="text-6xl md:text-7xl lg:text-8xl font-light text-slate-800 leading-tight tracking-tight" style={{ fontFamily: "'Crimson Text', serif" }}>
                   A Space for Your Mind, Body & Soul
                 </h1>
-                <p className="text-xl md:text-2xl text-gray-600 leading-relaxed font-light max-w-2xl">
-                  Join thousands of people embracing mindfulness and relaxation. 
-                  Discover guided meditation and reflection sessions designed for all levels.
+                <p className="text-xl md:text-2xl text-slate-600 leading-relaxed font-light max-w-2xl" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  Join thousands of people embracing mindfulness and reflection. 
+                  Discover guided meditation and peaceful moments designed for inner clarity.
                 </p>
               </div>
               
-              <div className="pt-6">
+              <div className="pt-8">
                 <Button 
                   onClick={() => setShowAuth(true)}
-                  className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white px-10 py-4 rounded-full text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                  size="lg"
+                  className="px-12 py-4 rounded-full text-lg font-medium shadow-xl"
                 >
                   Get Started
-                  <span className="ml-3">→</span>
+                  <span className="ml-3 text-xl">→</span>
                 </Button>
               </div>
             </div>
 
-            {/* Right Content - Girl Image with Gradient Background */}
+            {/* Right Content - Clean circular background with subtle gradient */}
             <div className="flex justify-center lg:justify-end">
               <div className="relative">
-                <div className="w-96 h-96 bg-gradient-to-br from-emerald-100 via-teal-50 to-green-100 rounded-full flex items-center justify-center shadow-2xl">
+                <div className="w-96 h-96 bg-calm-gradient rounded-full flex items-center justify-center shadow-2xl border border-sky-200/50">
                   <BuddhaAnimation />
                 </div>
-                {/* Decorative gradient elements */}
-                <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-br from-emerald-200 to-teal-200 rounded-full opacity-70"></div>
-                <div className="absolute -bottom-6 -left-6 w-12 h-12 bg-gradient-to-br from-teal-200 to-green-200 rounded-full opacity-50"></div>
-                <div className="absolute top-1/2 -left-8 w-6 h-6 bg-gradient-to-br from-green-200 to-emerald-200 rounded-full opacity-60"></div>
+                {/* Subtle decorative elements */}
+                <div className="absolute -top-6 -right-6 w-12 h-12 bg-gradient-to-br from-sky-200/60 to-blue-200/60 rounded-full opacity-70 blur-sm"></div>
+                <div className="absolute -bottom-8 -left-8 w-16 h-16 bg-gradient-to-br from-blue-200/40 to-sky-300/40 rounded-full opacity-50 blur-sm"></div>
+                <div className="absolute top-1/2 -left-10 w-8 h-8 bg-gradient-to-br from-sky-300/50 to-blue-200/50 rounded-full opacity-60 blur-sm"></div>
               </div>
             </div>
           </div>
@@ -83,15 +86,15 @@ export default function EveningReflectionDashboard() {
 
         {/* Auth Modal */}
         {showAuth && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full relative">
+          <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl max-w-md w-full relative border border-sky-100">
               <button 
                 onClick={() => setShowAuth(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-2xl transition-colors"
               >
                 ×
               </button>
-              <div className="p-6">
+              <div className="p-8">
                 <UserAuthPanel />
               </div>
             </div>
@@ -104,21 +107,23 @@ export default function EveningReflectionDashboard() {
   }
 
   return (
-    <div className="font-serif bg-white min-h-screen">
-      <header className="w-full px-4 py-4 border-b border-gray-200 bg-white flex items-center justify-between mb-4">
-        <div className="font-light text-2xl tracking-wide text-gray-800">Peace - Evening Reflection Journal</div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/30 to-blue-50/20">
+      <header className="w-full px-6 py-5 border-b border-sky-100 bg-white/90 backdrop-blur-sm flex items-center justify-between mb-6">
+        <div className="text-2xl font-light tracking-wide text-slate-800" style={{ fontFamily: "'Crimson Text', serif" }}>
+          Peace - Evening Reflection Journal
+        </div>
         <UserAuthPanel />
       </header>
-      <div className="container max-w-6xl py-12 px-2 md:px-6 lg:px-8">
+      <div className="container max-w-6xl py-12 px-4 md:px-6 lg:px-8">
         <WelcomeSection />
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10 items-start w-full">
-          <div className="space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-12 items-start w-full">
+          <div className="space-y-10">
             <ReflectionForm onSave={handleSave} />
             <WeeklySummary entries={reflections} />
             {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
-                <p className="mt-2 text-gray-500">Loading your reflections...</p>
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-10 w-10 border-2 border-sky-200 border-t-sky-500 mx-auto"></div>
+                <p className="mt-4 text-slate-500 font-light">Loading your reflections...</p>
               </div>
             ) : (
               <ReflectionLog entries={reflections} />
