@@ -25,88 +25,57 @@ export default function EveningReflectionDashboard() {
 
   if (!user) {
     return (
-      <div className="font-sans bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 min-h-screen">
+      <div className="font-serif bg-white min-h-screen">
         {/* Header */}
         <header className="w-full px-6 py-6 flex items-center justify-between">
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center mr-3">
-              <span className="text-white font-bold text-lg">☯</span>
-            </div>
-            <h1 className="text-2xl font-semibold text-gray-800">Peace</h1>
+            <h1 className="text-3xl font-light text-gray-800 tracking-wide">Peace</h1>
           </div>
           
-          <div className="hidden md:flex items-center space-x-8">
-            <nav className="flex space-x-6">
-              <a href="#" className="text-gray-600 hover:text-gray-800 transition-colors">Home</a>
-              <a href="#" className="text-gray-400 hover:text-gray-600 transition-colors">Classes</a>
-              <a href="#" className="text-gray-400 hover:text-gray-600 transition-colors">About</a>
-              <a href="#" className="text-gray-400 hover:text-gray-600 transition-colors">Blog</a>
-              <a href="#" className="text-gray-400 hover:text-gray-600 transition-colors">Contact</a>
-            </nav>
-            
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => setShowAuth(true)}
-                className="text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Sign In
-              </button>
-              <Button 
-                onClick={() => setShowAuth(true)}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-2 rounded-full transition-all duration-300"
-              >
-                Start Reflecting
-              </Button>
-            </div>
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <Button 
-              onClick={() => setShowAuth(true)}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-full text-sm"
-            >
-              Start Reflecting
-            </Button>
-          </div>
+          <Button 
+            onClick={() => setShowAuth(true)}
+            className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white px-8 py-3 rounded-full font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
+          >
+            Start Reflecting
+          </Button>
         </header>
         
         {/* Main Content */}
-        <div className="container max-w-7xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[70vh]">
+        <div className="container max-w-7xl mx-auto px-6 py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center min-h-[70vh]">
             {/* Left Content */}
-            <div className="space-y-8">
-              <div className="space-y-6">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 leading-tight">
+            <div className="space-y-10">
+              <div className="space-y-8">
+                <h1 className="text-6xl md:text-7xl lg:text-8xl font-light text-gray-900 leading-tight tracking-tight">
                   A Space for Your Mind, Body & Soul
                 </h1>
-                <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-lg">
+                <p className="text-xl md:text-2xl text-gray-600 leading-relaxed font-light max-w-2xl">
                   Join thousands of people embracing mindfulness and relaxation. 
                   Discover guided meditation and reflection sessions designed for all levels.
                 </p>
               </div>
               
-              <div className="pt-4">
+              <div className="pt-6">
                 <Button 
                   onClick={() => setShowAuth(true)}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                  className="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white px-10 py-4 rounded-full text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   Get Started
-                  <span className="ml-2">→</span>
+                  <span className="ml-3">→</span>
                 </Button>
               </div>
             </div>
 
-            {/* Right Content - Buddha Animation */}
+            {/* Right Content - Girl Image with Gradient Background */}
             <div className="flex justify-center lg:justify-end">
               <div className="relative">
-                <div className="w-96 h-96 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center shadow-2xl">
+                <div className="w-96 h-96 bg-gradient-to-br from-emerald-100 via-teal-50 to-green-100 rounded-full flex items-center justify-center shadow-2xl">
                   <BuddhaAnimation />
                 </div>
-                {/* Decorative elements */}
-                <div className="absolute -top-4 -right-4 w-8 h-8 bg-green-200 rounded-full opacity-60"></div>
-                <div className="absolute -bottom-6 -left-6 w-12 h-12 bg-emerald-200 rounded-full opacity-40"></div>
-                <div className="absolute top-1/2 -left-8 w-6 h-6 bg-teal-200 rounded-full opacity-50"></div>
+                {/* Decorative gradient elements */}
+                <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-br from-emerald-200 to-teal-200 rounded-full opacity-70"></div>
+                <div className="absolute -bottom-6 -left-6 w-12 h-12 bg-gradient-to-br from-teal-200 to-green-200 rounded-full opacity-50"></div>
+                <div className="absolute top-1/2 -left-8 w-6 h-6 bg-gradient-to-br from-green-200 to-emerald-200 rounded-full opacity-60"></div>
               </div>
             </div>
           </div>
@@ -135,9 +104,9 @@ export default function EveningReflectionDashboard() {
   }
 
   return (
-    <div className="font-sans bg-white min-h-screen">
+    <div className="font-serif bg-white min-h-screen">
       <header className="w-full px-4 py-4 border-b border-gray-200 bg-white flex items-center justify-between mb-4">
-        <div className="font-semibold text-xl tracking-tight text-gray-800">Peace - Evening Reflection Journal</div>
+        <div className="font-light text-2xl tracking-wide text-gray-800">Peace - Evening Reflection Journal</div>
         <UserAuthPanel />
       </header>
       <div className="container max-w-6xl py-12 px-2 md:px-6 lg:px-8">
@@ -148,7 +117,7 @@ export default function EveningReflectionDashboard() {
             <WeeklySummary entries={reflections} />
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
                 <p className="mt-2 text-gray-500">Loading your reflections...</p>
               </div>
             ) : (
