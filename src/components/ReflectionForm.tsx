@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import SoftCard from "./SoftCard";
 import { usePositiveNotification } from "@/hooks/usePositiveNotification";
 import PositiveNotification from "./PositiveNotification";
@@ -32,20 +32,25 @@ const moodLabels = {
   5: "🌟 Amazing"
 };
 
+const presetTags = [
+  "Gratitude", "Work", "Family", "Health", "Learning", "Creativity", 
+  "Exercise", "Mindfulness", "Relationships", "Goals", "Challenges", "Growth"
+];
+
 export default function ReflectionForm({ onSave }: ReflectionFormProps) {
   const [mood, setMood] = useState(3);
   const [well, setWell] = useState("");
   const [short, setShort] = useState("");
   const [again, setAgain] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [newTag, setNewTag] = useState("");
   const [loading, setLoading] = useState(false);
   const { notification, showNotification, hideNotification } = usePositiveNotification();
 
-  const addTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setTags([...tags, newTag.trim()]);
-      setNewTag("");
+  const toggleTag = (tag: string) => {
+    if (tags.includes(tag)) {
+      setTags(tags.filter(t => t !== tag));
+    } else {
+      setTags([...tags, tag]);
     }
   };
 
@@ -158,37 +163,42 @@ export default function ReflectionForm({ onSave }: ReflectionFormProps) {
               </div>
             </div>
 
-            {/* Tags */}
+            {/* Tags Selection */}
             <div className="space-y-3">
-              <Label className="text-base font-medium">Tags (optional)</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  placeholder="Add a tag..."
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  className="flex-1"
-                />
-                <Button type="button" onClick={addTag} variant="outline" size="icon">
-                  <Plus size={16} />
-                </Button>
+              <Label className="text-base font-medium">Select relevant tags</Label>
+              <div className="flex flex-wrap gap-2">
+                {presetTags.map((tag) => (
+                  <Button
+                    key={tag}
+                    type="button"
+                    variant={tags.includes(tag) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleTag(tag)}
+                    className="text-sm"
+                  >
+                    {tag}
+                  </Button>
+                ))}
               </div>
               {tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                      {tag}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0 hover:bg-transparent"
-                        onClick={() => removeTag(tag)}
-                      >
-                        <X size={12} />
-                      </Button>
-                    </Badge>
-                  ))}
+                <div className="mt-3">
+                  <p className="text-sm text-gray-600 mb-2">Selected tags:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                        {tag}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 hover:bg-transparent"
+                          onClick={() => removeTag(tag)}
+                        >
+                          <X size={12} />
+                        </Button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
