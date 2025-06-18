@@ -24,11 +24,13 @@ export function useReflections() {
     // Get initial user
     supabase.auth.getUser().then(({ data }) => {
       setUser(data?.user ?? null);
+      console.log('Initial user check:', data?.user?.email || 'No user');
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      console.log('Auth state changed:', session?.user?.email || 'No user');
     });
 
     return () => subscription.unsubscribe();
@@ -46,12 +48,19 @@ export function useReflections() {
   const fetchReflections = async () => {
     try {
       setLoading(true);
+      console.log('Fetching reflections for user:', user?.email);
+      
       const { data, error } = await supabase
         .from('reflections')
         .select('*')
         .order('date', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching reflections:', error);
+        throw error;
+      }
+
+      console.log('Fetched reflections:', data?.length || 0, 'items');
 
       const transformedData: Reflection[] = data.map(item => ({
         ...item,
@@ -68,23 +77,37 @@ export function useReflections() {
   };
 
   const saveReflection = async (reflection: Omit<Reflection, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found when trying to save reflection');
+      throw new Error('You must be logged in to save reflections');
+    }
 
     try {
+      console.log('Saving reflection for user:', user.email);
+      console.log('Reflection data:', reflection);
+
+      const reflectionData = {
+        user_id: user.id,
+        date: reflection.date.toISOString().split('T')[0],
+        mood: reflection.mood,
+        well: reflection.well,
+        short: reflection.short,
+        again: reflection.again,
+        tags: reflection.tags
+      };
+
+      console.log('Formatted reflection data for Supabase:', reflectionData);
+
       const { error } = await supabase
         .from('reflections')
-        .upsert({
-          user_id: user.id,
-          date: reflection.date.toISOString().split('T')[0],
-          mood: reflection.mood,
-          well: reflection.well,
-          short: reflection.short,
-          again: reflection.again,
-          tags: reflection.tags
-        });
+        .upsert(reflectionData);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error saving reflection:', error);
+        throw error;
+      }
       
+      console.log('Reflection saved successfully');
       await fetchReflections();
     } catch (error) {
       console.error('Error saving reflection:', error);

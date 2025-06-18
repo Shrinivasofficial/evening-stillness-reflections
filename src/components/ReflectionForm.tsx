@@ -12,7 +12,7 @@ import { usePositiveNotification } from "@/hooks/usePositiveNotification";
 import PositiveNotification from "./PositiveNotification";
 
 interface ReflectionEntry {
-  date: string;
+  date: Date;
   mood: number;
   well: string;
   short: string;
@@ -63,7 +63,7 @@ export default function ReflectionForm({ onSave }: ReflectionFormProps) {
     setLoading(true);
 
     const entry: ReflectionEntry = {
-      date: new Date().toISOString().split('T')[0],
+      date: new Date(),
       mood,
       well: well.trim(),
       short: short.trim(),
@@ -71,9 +71,11 @@ export default function ReflectionForm({ onSave }: ReflectionFormProps) {
       tags
     };
 
+    console.log('Submitting reflection entry:', entry);
+
     try {
       await onSave(entry);
-      showNotification('Reflection saved');
+      showNotification('Reflection saved successfully');
       
       // Reset form
       setMood(3);

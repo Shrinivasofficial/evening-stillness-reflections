@@ -42,18 +42,21 @@ export default function UserAuthPanel() {
     e.preventDefault();
     setLoading(true);
 
+    console.log('Attempting sign up with redirect URL:', window.location.origin);
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`
+        emailRedirectTo: window.location.origin
       }
     });
 
     if (error) {
+      console.error('Sign up error:', error);
       showNotification(error.message, 'info');
     } else {
-      showNotification('Email verification sent');
+      showNotification('Please check your email to verify your account');
       setEmail("");
       setPassword("");
     }
@@ -64,18 +67,25 @@ export default function UserAuthPanel() {
     e.preventDefault();
     setLoading(true);
 
+    console.log('Attempting sign in');
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
+      console.error('Sign in error:', error);
       showNotification(error.message, 'info');
+    } else {
+      setEmail("");
+      setPassword("");
     }
     setLoading(false);
   };
 
   const handleSignOut = async () => {
+    console.log('Signing out');
     await supabase.auth.signOut();
   };
 
