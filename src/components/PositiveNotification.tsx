@@ -16,6 +16,7 @@ const positiveMessages = {
   'reflection saved': "🌟 Your beautiful reflection has been safely stored. You're building something wonderful!",
   'reflection saved successfully': "🌟 Your beautiful reflection has been safely stored. You're building something wonderful!",
   'welcome back': "🙏 Welcome back, peaceful soul. Your journey of reflection continues.",
+  'welcome back! you\'re successfully logged in.': "🙏 Welcome back, peaceful soul. Your journey of reflection continues.",
   'signed out': "☮️ Until we meet again. May peace be with you.",
   'you\'ve been signed out successfully': "☮️ Until we meet again. May peace be with you.",
   'default': "✨ Something wonderful just happened! Keep shining bright."
@@ -35,7 +36,7 @@ export default function PositiveNotification({
       const timer = setTimeout(() => {
         setShow(false);
         setTimeout(onClose, 300); // Wait for fade out animation
-      }, type === 'info' ? 6000 : 4000); // Show info messages longer
+      }, type === 'info' ? 6000 : 3000); // Show info messages longer, success messages for 3 seconds
       return () => clearTimeout(timer);
     }
   }, [isVisible, onClose, type]);

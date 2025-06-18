@@ -1,12 +1,17 @@
 
 import React, { useState } from "react";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import SoftCard from "./SoftCard";
 import { usePositiveNotification } from "@/hooks/usePositiveNotification";
 import PositiveNotification from "./PositiveNotification";
@@ -38,6 +43,7 @@ const presetTags = [
 ];
 
 export default function ReflectionForm({ onSave }: ReflectionFormProps) {
+  const [date, setDate] = useState<Date>(new Date());
   const [mood, setMood] = useState(3);
   const [well, setWell] = useState("");
   const [short, setShort] = useState("");
@@ -62,9 +68,8 @@ export default function ReflectionForm({ onSave }: ReflectionFormProps) {
     e.preventDefault();
     setLoading(true);
 
-    // Create entry with current date and time
     const entry: ReflectionEntry = {
-      date: new Date(), // This ensures we always have a proper date
+      date,
       mood,
       well: well.trim(),
       short: short.trim(),
@@ -97,13 +102,41 @@ export default function ReflectionForm({ onSave }: ReflectionFormProps) {
     <>
       <SoftCard className="animate-fade-in">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-800">Today's Reflection</CardTitle>
+          <CardTitle className="text-xl font-semibold text-gray-800">Daily Reflection</CardTitle>
           <CardDescription>
             Take a moment to reflect on your day with kindness and awareness.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Date Selection */}
+            <div className="space-y-2">
+              <Label className="text-base font-medium">Reflection Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={(selectedDate) => selectedDate && setDate(selectedDate)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
             {/* Mood Selection */}
             <div className="space-y-3">
               <Label className="text-base font-medium">How are you feeling today?</Label>
