@@ -65,11 +65,15 @@ export default function EveningReflectionDashboard() {
               </div>
             </div>
 
-            {/* Right Content - Clean circular background with subtle gradient */}
+            {/* Right Content - Clean circular background with meditation image */}
             <div className="flex justify-center lg:justify-end">
               <div className="relative">
-                <div className="w-96 h-96 bg-calm-gradient rounded-full flex items-center justify-center shadow-2xl border border-sky-200/50">
-                  <BuddhaAnimation />
+                <div className="w-96 h-96 bg-calm-gradient rounded-full flex items-center justify-center shadow-2xl border border-sky-200/50 overflow-hidden">
+                  <img 
+                    src="/lovable-uploads/8ce6aa5a-7937-4493-b285-7d14f2ec456c.png" 
+                    alt="Peaceful meditation pose" 
+                    className="w-full h-full object-cover object-center"
+                  />
                 </div>
                 {/* Subtle decorative elements */}
                 <div className="absolute -top-6 -right-6 w-12 h-12 bg-gradient-to-br from-sky-200/60 to-blue-200/60 rounded-full opacity-70 blur-sm"></div>
