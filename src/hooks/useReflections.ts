@@ -53,6 +53,7 @@ export function useReflections() {
       const { data, error } = await supabase
         .from('reflections')
         .select('*')
+        .eq('user_id', user?.id)
         .order('date', { ascending: false });
 
       if (error) {
@@ -60,17 +61,20 @@ export function useReflections() {
         throw error;
       }
 
+      console.log('Raw data from Supabase:', data);
       console.log('Fetched reflections:', data?.length || 0, 'items');
 
-      const transformedData: Reflection[] = data.map(item => ({
+      const transformedData: Reflection[] = (data || []).map(item => ({
         ...item,
         date: new Date(item.date),
         tags: item.tags || []
       }));
 
+      console.log('Transformed reflections:', transformedData);
       setReflections(transformedData);
     } catch (error) {
       console.error('Error fetching reflections:', error);
+      setReflections([]);
     } finally {
       setLoading(false);
     }
@@ -84,31 +88,41 @@ export function useReflections() {
 
     try {
       console.log('Saving reflection for user:', user.email);
-      console.log('Reflection data:', reflection);
+      console.log('Input reflection data:', reflection);
+      console.log('Reflection date:', reflection.date);
+      console.log('Date type:', typeof reflection.date);
+
+      // Ensure date is properly formatted
+      const dateString = reflection.date instanceof Date 
+        ? reflection.date.toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
 
       const reflectionData = {
         user_id: user.id,
-        date: reflection.date.toISOString().split('T')[0],
+        date: dateString,
         mood: reflection.mood,
         well: reflection.well,
         short: reflection.short,
         again: reflection.again,
-        tags: reflection.tags
+        tags: reflection.tags || []
       };
 
       console.log('Formatted reflection data for Supabase:', reflectionData);
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('reflections')
-        .upsert(reflectionData);
+        .upsert(reflectionData, {
+          onConflict: 'user_id,date'
+        })
+        .select();
 
       if (error) {
         console.error('Supabase error saving reflection:', error);
         throw error;
       }
       
-      console.log('Reflection saved successfully');
-      await fetchReflections();
+      console.log('Reflection saved successfully:', data);
+      await fetchReflections(); // Refresh the list
     } catch (error) {
       console.error('Error saving reflection:', error);
       throw error;

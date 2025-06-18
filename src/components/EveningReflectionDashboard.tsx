@@ -19,10 +19,6 @@ export default function EveningReflectionDashboard() {
     await saveReflection(entry);
   }
 
-  function handleNew() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/30 to-blue-50/20">
@@ -106,11 +102,24 @@ export default function EveningReflectionDashboard() {
     );
   }
 
+  // Get current date for display
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/30 to-blue-50/20">
       <header className="w-full px-6 py-5 border-b border-sky-100 bg-white/90 backdrop-blur-sm flex items-center justify-between mb-6">
-        <div className="text-2xl font-light tracking-wide text-slate-800" style={{ fontFamily: "'Crimson Text', serif" }}>
-          Peace - Evening Reflection Journal
+        <div className="flex flex-col">
+          <div className="text-2xl font-light tracking-wide text-slate-800" style={{ fontFamily: "'Crimson Text', serif" }}>
+            Peace - Evening Reflection Journal
+          </div>
+          <div className="text-sm text-slate-500 mt-1">
+            {currentDate}
+          </div>
         </div>
         <UserAuthPanel />
       </header>
@@ -130,7 +139,7 @@ export default function EveningReflectionDashboard() {
             )}
           </div>
           <div className="space-y-8">
-            <QuickLinksPanel onNew={handleNew} />
+            <QuickLinksPanel />
           </div>
         </div>
       </div>

@@ -62,8 +62,9 @@ export default function ReflectionForm({ onSave }: ReflectionFormProps) {
     e.preventDefault();
     setLoading(true);
 
+    // Create entry with current date and time
     const entry: ReflectionEntry = {
-      date: new Date(),
+      date: new Date(), // This ensures we always have a proper date
       mood,
       well: well.trim(),
       short: short.trim(),
@@ -71,7 +72,8 @@ export default function ReflectionForm({ onSave }: ReflectionFormProps) {
       tags
     };
 
-    console.log('Submitting reflection entry:', entry);
+    console.log('Creating reflection entry with date:', entry.date);
+    console.log('Full entry data:', entry);
 
     try {
       await onSave(entry);
