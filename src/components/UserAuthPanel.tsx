@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, User as UserIcon, Mail } from "lucide-react";
 import { usePositiveNotification } from "@/hooks/usePositiveNotification";
 import PositiveNotification from "./PositiveNotification";
 
@@ -16,6 +16,7 @@ export default function UserAuthPanel() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const { notification, showNotification, hideNotification } = usePositiveNotification();
 
   React.useEffect(() => {
@@ -29,9 +30,11 @@ export default function UserAuthPanel() {
       setUser(session?.user ?? null);
       
       if (event === 'SIGNED_IN') {
-        showNotification('Login successful');
+        showNotification('Welcome back! You\'re successfully logged in.');
+        setShowVerificationMessage(false);
       } else if (event === 'SIGNED_OUT') {
-        showNotification('Signed out');
+        showNotification('You\'ve been signed out successfully.');
+        setShowVerificationMessage(false);
       }
     });
 
@@ -42,21 +45,25 @@ export default function UserAuthPanel() {
     e.preventDefault();
     setLoading(true);
 
-    console.log('Attempting sign up with redirect URL:', window.location.origin);
+    // Get the current domain for redirect
+    const currentDomain = window.location.origin;
+    console.log('Attempting sign up with redirect URL:', currentDomain);
 
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin
+        emailRedirectTo: currentDomain
       }
     });
 
     if (error) {
       console.error('Sign up error:', error);
       showNotification(error.message, 'info');
+      setShowVerificationMessage(false);
     } else {
-      showNotification('Please check your email to verify your account');
+      console.log('Sign up successful, showing verification message');
+      setShowVerificationMessage(true);
       setEmail("");
       setPassword("");
     }
@@ -76,7 +83,11 @@ export default function UserAuthPanel() {
 
     if (error) {
       console.error('Sign in error:', error);
-      showNotification(error.message, 'info');
+      if (error.message.includes('Email not confirmed')) {
+        showNotification('Please check your email and click the verification link before signing in.', 'info');
+      } else {
+        showNotification(error.message, 'info');
+      }
     } else {
       setEmail("");
       setPassword("");
@@ -89,11 +100,55 @@ export default function UserAuthPanel() {
     await supabase.auth.signOut();
   };
 
+  // Show verification message after successful signup
+  if (showVerificationMessage) {
+    return (
+      <>
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Mail className="w-8 h-8 text-sky-600" />
+            </div>
+            <CardTitle className="text-sky-900">Check Your Email</CardTitle>
+            <CardDescription>
+              We've sent you a verification link. Please check your email and click the link to activate your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-sky-50 border border-sky-200 rounded-lg p-4">
+              <p className="text-sm text-sky-800">
+                <strong>Next steps:</strong>
+              </p>
+              <ol className="text-sm text-sky-700 mt-2 space-y-1">
+                <li>1. Check your email inbox</li>
+                <li>2. Click the verification link</li>
+                <li>3. Return here to sign in</li>
+              </ol>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowVerificationMessage(false)}
+              className="w-full"
+            >
+              Back to Sign In
+            </Button>
+          </CardContent>
+        </Card>
+        <PositiveNotification
+          message={notification.message}
+          isVisible={notification.isVisible}
+          onClose={hideNotification}
+          type={notification.type}
+        />
+      </>
+    );
+  }
+
   if (user) {
     return (
       <>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm text-slate-600">
             <UserIcon size={16} />
             <span>{user.email}</span>
           </div>
