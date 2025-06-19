@@ -21,22 +21,21 @@ export function useEmailValidation() {
       };
     }
 
-    // Check for common invalid domains
+    // Check for obviously invalid domains (very basic list)
     const domain = email.split('@')[1].toLowerCase();
-    const invalidDomains = [
-      'test.com', 'example.com', 'fake.com', 'invalid.com', 
-      'temp.com', 'dummy.com', '123.com', 'abc.com'
+    const obviouslyInvalidDomains = [
+      'test.com', 'example.com', 'fake.com', 'invalid.com'
     ];
     
-    if (invalidDomains.includes(domain)) {
+    if (obviouslyInvalidDomains.includes(domain)) {
       return {
         isValid: false,
         isDeliverable: false,
-        error: "Please use a valid email address"
+        error: "Please use a real email address"
       };
     }
 
-    // Advanced validation
+    // Advanced validation (but don't let it fail the whole process)
     setIsValidating(true);
     
     try {
@@ -45,8 +44,9 @@ export function useEmailValidation() {
       return result;
     } catch (error) {
       setIsValidating(false);
+      // If advanced validation fails, we'll still allow the email
       return {
-        isValid: true, // Fallback to allowing if validation service fails
+        isValid: true,
         isDeliverable: true,
         error: undefined
       };
@@ -56,71 +56,42 @@ export function useEmailValidation() {
   const validateEmailAdvanced = async (email: string): Promise<EmailValidationResult> => {
     const domain = email.split('@')[1].toLowerCase();
     
-    // Check for disposable email domains (expanded list)
+    // Check for common disposable email domains (reduced list)
     const disposableDomains = [
       '10minutemail.com', 'tempmail.org', 'guerrillamail.com',
-      'mailinator.com', 'yopmail.com', 'sharklasers.com',
-      'temp-mail.org', 'throwaway.email', 'maildrop.cc',
-      'getnada.com', 'mohmal.com', 'mailnesia.com',
-      'trashmail.com', 'dispostable.com', 'tempail.com',
-      'emailondeck.com', 'mytrashmail.com', 'spamgourmet.com'
+      'mailinator.com', 'yopmail.com', 'throwaway.email'
     ];
     
-    if (disposableDomains.some(d => domain.includes(d))) {
+    if (disposableDomains.some(d => domain === d)) {
       return {
         isValid: false,
         isDeliverable: false,
-        error: "Disposable email addresses are not allowed"
+        error: "Temporary email addresses are not allowed"
       };
     }
 
-    // Check for typos in popular domains
-    const popularDomains = {
-      'gmail.com': ['gmai.com', 'gmial.com', 'gmail.co', 'gmai.co', 'gnail.com'],
-      'yahoo.com': ['yaho.com', 'yahoo.co', 'yhoo.com', 'yahooo.com'],
-      'hotmail.com': ['hotmai.com', 'hotmial.com', 'hotmail.co', 'hotmial.co'],
-      'outlook.com': ['outlok.com', 'outlook.co', 'outloo.com', 'outlok.co'],
-      'icloud.com': ['iclod.com', 'icloud.co', 'icloude.com'],
-      'protonmail.com': ['protonmai.com', 'protonmail.co', 'protonmial.com']
-    };
-
-    for (const [correct, typos] of Object.entries(popularDomains)) {
-      if (typos.some(typo => domain.includes(typo))) {
-        return {
-          isValid: false,
-          isDeliverable: false,
-          error: `Did you mean ${email.replace(domain, correct)}?`
-        };
-      }
+    // Check for common typos in popular domains (suggestions only)
+    const typoSuggestions = checkForTypos(email, domain);
+    if (typoSuggestions) {
+      return {
+        isValid: false,
+        isDeliverable: false,
+        error: `Did you mean ${typoSuggestions}?`
+      };
     }
 
-    // MX Record validation using DNS over HTTPS (free)
+    // Try MX record validation but don't fail if it doesn't work
     try {
       const mxValidation = await validateMXRecord(domain);
       if (!mxValidation.isValid) {
         return {
           isValid: false,
           isDeliverable: false,
-          error: mxValidation.error || "Domain does not accept emails"
+          error: "This domain doesn't seem to accept emails"
         };
       }
     } catch (error) {
-      console.log('MX validation failed, continuing with other checks');
-    }
-
-    // Check for role-based emails (optional validation)
-    const roleBasedPrefixes = [
-      'admin', 'info', 'support', 'noreply', 'no-reply',
-      'contact', 'sales', 'help', 'webmaster', 'postmaster'
-    ];
-    
-    const emailPrefix = email.split('@')[0].toLowerCase();
-    if (roleBasedPrefixes.includes(emailPrefix)) {
-      return {
-        isValid: true, // Still valid but with warning
-        isDeliverable: true,
-        error: "Role-based emails may not receive important notifications"
-      };
+      console.log('MX validation failed, allowing email anyway');
     }
 
     return {
@@ -130,9 +101,24 @@ export function useEmailValidation() {
     };
   };
 
+  const checkForTypos = (email: string, domain: string): string | null => {
+    const commonTypos = {
+      'gmail.com': ['gmai.com', 'gmial.com', 'gmail.co'],
+      'yahoo.com': ['yaho.com', 'yahoo.co', 'yhoo.com'],
+      'hotmail.com': ['hotmai.com', 'hotmail.co'],
+      'outlook.com': ['outlok.com', 'outlook.co']
+    };
+
+    for (const [correct, typos] of Object.entries(commonTypos)) {
+      if (typos.includes(domain)) {
+        return email.replace(domain, correct);
+      }
+    }
+    return null;
+  };
+
   const validateMXRecord = async (domain: string): Promise<{isValid: boolean, error?: string}> => {
     try {
-      // Use Cloudflare's DNS over HTTPS (free)
       const response = await fetch(`https://cloudflare-dns.com/dns-query?name=${domain}&type=MX`, {
         headers: {
           'Accept': 'application/dns-json'
@@ -145,31 +131,25 @@ export function useEmailValidation() {
       
       const data = await response.json();
       
-      if (data.Answer && data.Answer.length > 0) {
+      // Check if we got a proper response and if there are MX records
+      if (data.Status === 0 && data.Answer && data.Answer.length > 0) {
         return { isValid: true };
+      } else if (data.Status === 3) {
+        // NXDOMAIN - domain doesn't exist
+        return { 
+          isValid: false, 
+          error: "This domain doesn't exist" 
+        };
       } else {
         return { 
           isValid: false, 
-          error: "Domain does not have email servers configured" 
+          error: "Domain doesn't accept emails" 
         };
       }
     } catch (error) {
       console.error('MX record validation error:', error);
-      return { isValid: true }; // Fallback to allowing if check fails
-    }
-  };
-
-  // Alternative: Use a free email validation API (Hunter.io has free tier)
-  const validateWithHunter = async (email: string): Promise<EmailValidationResult> => {
-    try {
-      // This would require an API key - uncomment and add your Hunter.io API key if needed
-      // const response = await fetch(`https://api.hunter.io/v2/email-verifier?email=${email}&api_key=YOUR_API_KEY`);
-      // const data = await response.json();
-      // return { isValid: data.data.result === 'deliverable', isDeliverable: true };
-      
-      return { isValid: true, isDeliverable: true };
-    } catch (error) {
-      return { isValid: true, isDeliverable: true };
+      // If MX validation fails, we'll allow the email
+      throw error;
     }
   };
 
