@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import emailjs from '@emailjs/browser';
 
 interface EmailValidationResult {
   isValid: boolean;
@@ -37,12 +36,10 @@ export function useEmailValidation() {
       };
     }
 
-    // Advanced validation using EmailJS
+    // Advanced validation
     setIsValidating(true);
     
     try {
-      // You can use EmailJS to send a test email or validate
-      // For now, we'll do enhanced client-side validation
       const result = await validateEmailAdvanced(email);
       setIsValidating(false);
       return result;
@@ -57,16 +54,19 @@ export function useEmailValidation() {
   };
 
   const validateEmailAdvanced = async (email: string): Promise<EmailValidationResult> => {
-    // Enhanced validation logic
-    const domain = email.split('@')[1];
+    const domain = email.split('@')[1].toLowerCase();
     
-    // Check for disposable email domains
+    // Check for disposable email domains (expanded list)
     const disposableDomains = [
       '10minutemail.com', 'tempmail.org', 'guerrillamail.com',
-      'mailinator.com', 'yopmail.com', 'sharklasers.com'
+      'mailinator.com', 'yopmail.com', 'sharklasers.com',
+      'temp-mail.org', 'throwaway.email', 'maildrop.cc',
+      'getnada.com', 'mohmal.com', 'mailnesia.com',
+      'trashmail.com', 'dispostable.com', 'tempail.com',
+      'emailondeck.com', 'mytrashmail.com', 'spamgourmet.com'
     ];
     
-    if (disposableDomains.some(d => domain.toLowerCase().includes(d))) {
+    if (disposableDomains.some(d => domain.includes(d))) {
       return {
         isValid: false,
         isDeliverable: false,
@@ -76,20 +76,51 @@ export function useEmailValidation() {
 
     // Check for typos in popular domains
     const popularDomains = {
-      'gmail.com': ['gmai.com', 'gmial.com', 'gmail.co'],
-      'yahoo.com': ['yaho.com', 'yahoo.co', 'yhoo.com'],
-      'hotmail.com': ['hotmai.com', 'hotmial.com', 'hotmail.co'],
-      'outlook.com': ['outlok.com', 'outlook.co', 'outloo.com']
+      'gmail.com': ['gmai.com', 'gmial.com', 'gmail.co', 'gmai.co', 'gnail.com'],
+      'yahoo.com': ['yaho.com', 'yahoo.co', 'yhoo.com', 'yahooo.com'],
+      'hotmail.com': ['hotmai.com', 'hotmial.com', 'hotmail.co', 'hotmial.co'],
+      'outlook.com': ['outlok.com', 'outlook.co', 'outloo.com', 'outlok.co'],
+      'icloud.com': ['iclod.com', 'icloud.co', 'icloude.com'],
+      'protonmail.com': ['protonmai.com', 'protonmail.co', 'protonmial.com']
     };
 
     for (const [correct, typos] of Object.entries(popularDomains)) {
-      if (typos.some(typo => domain.toLowerCase().includes(typo))) {
+      if (typos.some(typo => domain.includes(typo))) {
         return {
           isValid: false,
           isDeliverable: false,
           error: `Did you mean ${email.replace(domain, correct)}?`
         };
       }
+    }
+
+    // MX Record validation using DNS over HTTPS (free)
+    try {
+      const mxValidation = await validateMXRecord(domain);
+      if (!mxValidation.isValid) {
+        return {
+          isValid: false,
+          isDeliverable: false,
+          error: mxValidation.error || "Domain does not accept emails"
+        };
+      }
+    } catch (error) {
+      console.log('MX validation failed, continuing with other checks');
+    }
+
+    // Check for role-based emails (optional validation)
+    const roleBasedPrefixes = [
+      'admin', 'info', 'support', 'noreply', 'no-reply',
+      'contact', 'sales', 'help', 'webmaster', 'postmaster'
+    ];
+    
+    const emailPrefix = email.split('@')[0].toLowerCase();
+    if (roleBasedPrefixes.includes(emailPrefix)) {
+      return {
+        isValid: true, // Still valid but with warning
+        isDeliverable: true,
+        error: "Role-based emails may not receive important notifications"
+      };
     }
 
     return {
@@ -99,33 +130,51 @@ export function useEmailValidation() {
     };
   };
 
-  const sendVerificationEmail = async (email: string, verificationCode: string) => {
+  const validateMXRecord = async (domain: string): Promise<{isValid: boolean, error?: string}> => {
     try {
-      const templateParams = {
-        to_email: email,
-        verification_code: verificationCode,
-        app_name: "Evening Reflection"
-      };
-
-      // Initialize EmailJS with your public key
-      // You'll need to set these up in your EmailJS dashboard
-      const result = await emailjs.send(
-        'your_service_id', // Replace with your EmailJS service ID
-        'your_template_id', // Replace with your EmailJS template ID
-        templateParams,
-        'your_public_key' // Replace with your EmailJS public key
-      );
-
-      return { success: true, result };
+      // Use Cloudflare's DNS over HTTPS (free)
+      const response = await fetch(`https://cloudflare-dns.com/dns-query?name=${domain}&type=MX`, {
+        headers: {
+          'Accept': 'application/dns-json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('DNS query failed');
+      }
+      
+      const data = await response.json();
+      
+      if (data.Answer && data.Answer.length > 0) {
+        return { isValid: true };
+      } else {
+        return { 
+          isValid: false, 
+          error: "Domain does not have email servers configured" 
+        };
+      }
     } catch (error) {
-      console.error('Failed to send verification email:', error);
-      return { success: false, error };
+      console.error('MX record validation error:', error);
+      return { isValid: true }; // Fallback to allowing if check fails
+    }
+  };
+
+  // Alternative: Use a free email validation API (Hunter.io has free tier)
+  const validateWithHunter = async (email: string): Promise<EmailValidationResult> => {
+    try {
+      // This would require an API key - uncomment and add your Hunter.io API key if needed
+      // const response = await fetch(`https://api.hunter.io/v2/email-verifier?email=${email}&api_key=YOUR_API_KEY`);
+      // const data = await response.json();
+      // return { isValid: data.data.result === 'deliverable', isDeliverable: true };
+      
+      return { isValid: true, isDeliverable: true };
+    } catch (error) {
+      return { isValid: true, isDeliverable: true };
     }
   };
 
   return {
     validateEmail,
-    sendVerificationEmail,
     isValidating
   };
 }
