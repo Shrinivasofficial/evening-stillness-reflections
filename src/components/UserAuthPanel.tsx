@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { LogOut, User as UserIcon, Mail, AlertCircle, Loader2 } from "lucide-react";
+import { LogOut, User as UserIcon, Mail, AlertCircle, Loader2, CheckCircle } from "lucide-react";
 import { usePositiveNotification } from "@/hooks/usePositiveNotification";
+import { useEmailValidation } from "@/hooks/useEmailValidation";
 import PositiveNotification from "./PositiveNotification";
 
 export default function UserAuthPanel() {
@@ -18,33 +19,30 @@ export default function UserAuthPanel() {
   const [password, setPassword] = useState("");
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [emailValidationState, setEmailValidationState] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
   const { notification, showNotification, hideNotification } = usePositiveNotification();
+  const { validateEmail, isValidating } = useEmailValidation();
 
   React.useEffect(() => {
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      // Only set user if email is confirmed
       if (session?.user?.email_confirmed_at) {
         setUser(session.user);
       } else if (session?.user) {
-        // Sign out unverified users
         supabase.auth.signOut();
         showNotification('Please verify your email before signing in.', 'info');
       }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth event:', event, 'Session:', session);
       
       if (event === 'SIGNED_IN' && session?.user) {
-        // Check if email is verified
         if (session.user.email_confirmed_at) {
           setUser(session.user);
           showNotification('Welcome back! You\'re successfully logged in.');
           setShowVerificationMessage(false);
         } else {
-          // Sign out unverified users immediately
           supabase.auth.signOut();
           showNotification('Please verify your email before signing in.', 'info');
         }
@@ -58,23 +56,44 @@ export default function UserAuthPanel() {
     return () => subscription.unsubscribe();
   }, [showNotification]);
 
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setEmailError("Please enter a valid email address");
-      return false;
-    }
-    
-    // Basic domain validation
-    const domain = email.split('@')[1];
-    const commonInvalidDomains = ['test.com', 'example.com', 'fake.com', 'invalid.com'];
-    if (commonInvalidDomains.includes(domain.toLowerCase())) {
-      setEmailError("Please use a valid email address");
-      return false;
-    }
-    
+  const handleEmailChange = async (newEmail: string) => {
+    setEmail(newEmail);
     setEmailError("");
-    return true;
+    
+    if (newEmail.trim() === "") {
+      setEmailValidationState('idle');
+      return;
+    }
+
+    setEmailValidationState('validating');
+    
+    try {
+      const validation = await validateEmail(newEmail);
+      
+      if (validation.isValid && validation.isDeliverable) {
+        setEmailValidationState('valid');
+        setEmailError("");
+      } else {
+        setEmailValidationState('invalid');
+        setEmailError(validation.error || "Please enter a valid email address");
+      }
+    } catch (error) {
+      setEmailValidationState('invalid');
+      setEmailError("Unable to validate email. Please try again.");
+    }
+  };
+
+  const getEmailInputIcon = () => {
+    switch (emailValidationState) {
+      case 'validating':
+        return <Loader2 className="w-4 h-4 animate-spin text-gray-400" />;
+      case 'valid':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'invalid':
+        return <AlertCircle className="w-4 h-4 text-red-600" />;
+      default:
+        return null;
+    }
   };
 
   const getRedirectUrl = (): string => {
@@ -86,7 +105,8 @@ export default function UserAuthPanel() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateEmail(email)) {
+    if (emailValidationState !== 'valid') {
+      showNotification('Please enter a valid email address.', 'info');
       return;
     }
     
@@ -122,6 +142,7 @@ export default function UserAuthPanel() {
         setShowVerificationMessage(true);
         setEmail("");
         setPassword("");
+        setEmailValidationState('idle');
       }
     } catch (error: any) {
       console.error('Unexpected sign up error:', error);
@@ -134,7 +155,8 @@ export default function UserAuthPanel() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateEmail(email)) {
+    if (emailValidationState === 'invalid') {
+      showNotification('Please enter a valid email address.', 'info');
       return;
     }
     
@@ -158,12 +180,12 @@ export default function UserAuthPanel() {
           showNotification(error.message, 'info');
         }
       } else if (data.user && !data.user.email_confirmed_at) {
-        // Extra safety check - sign out unverified users
         await supabase.auth.signOut();
         showNotification('Please verify your email before signing in.', 'info');
       } else {
         setEmail("");
         setPassword("");
+        setEmailValidationState('idle');
       }
     } catch (error: any) {
       console.error('Unexpected sign in error:', error);
@@ -181,7 +203,7 @@ export default function UserAuthPanel() {
   };
 
   const handleResendVerification = async () => {
-    if (!email || !validateEmail(email)) {
+    if (!email || emailValidationState !== 'valid') {
       showNotification('Please enter a valid email address first.', 'info');
       return;
     }
@@ -323,17 +345,19 @@ export default function UserAuthPanel() {
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (emailError) setEmailError("");
-                    }}
-                    required
-                    className={emailError ? "border-red-500" : ""}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      required
+                      className={`pr-10 ${emailError ? "border-red-500" : emailValidationState === 'valid' ? "border-green-500" : ""}`}
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      {getEmailInputIcon()}
+                    </div>
+                  </div>
                   {emailError && (
                     <div className="flex items-center gap-1 text-sm text-red-600">
                       <AlertCircle size={14} />
@@ -351,7 +375,11 @@ export default function UserAuthPanel() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading || isValidating || emailValidationState === 'validating'}
+                >
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -368,17 +396,19 @@ export default function UserAuthPanel() {
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (emailError) setEmailError("");
-                    }}
-                    required
-                    className={emailError ? "border-red-500" : ""}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      required
+                      className={`pr-10 ${emailError ? "border-red-500" : emailValidationState === 'valid' ? "border-green-500" : ""}`}
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      {getEmailInputIcon()}
+                    </div>
+                  </div>
                   {emailError && (
                     <div className="flex items-center gap-1 text-sm text-red-600">
                       <AlertCircle size={14} />
@@ -398,7 +428,11 @@ export default function UserAuthPanel() {
                   />
                   <p className="text-xs text-slate-500">Must be at least 6 characters</p>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading || isValidating || emailValidationState !== 'valid'}
+                >
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
