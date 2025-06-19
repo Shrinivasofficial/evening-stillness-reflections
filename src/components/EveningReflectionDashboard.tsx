@@ -7,20 +7,24 @@ import WeeklySummary from "./WeeklySummary";
 import QuickLinksPanel from "./QuickLinksPanel";
 import Footer from "./Footer";
 import UserAuthPanel from "./UserAuthPanel";
-import BuddhaAnimation from "./BuddhaAnimation";
-import meditation from './meditation.png'
 import { Button } from "@/components/ui/button";
 import { useReflections } from "../hooks/useReflections";
+import { Loader2 } from "lucide-react";
 
 export default function EveningReflectionDashboard() {
-  const { reflections, loading, saveReflection, user } = useReflections();
+  const { reflections, loading, saveReflection, user, isAuthenticated } = useReflections();
   const [showAuth, setShowAuth] = useState(false);
 
   async function handleSave(entry: any) {
-    await saveReflection(entry);
+    try {
+      await saveReflection(entry);
+    } catch (error) {
+      console.error('Failed to save reflection:', error);
+      // Error handling is done in the form component
+    }
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/30 to-blue-50/20">
         {/* Header */}
@@ -66,11 +70,15 @@ export default function EveningReflectionDashboard() {
               </div>
             </div>
 
-            {/* Right Content - Clean circular background with meditation image */}
+            {/* Right Content - Clean circular background with image */}
             <div className="flex justify-center lg:justify-end">
               <div className="relative">
                 <div className="w-96 h-96 bg-calm-gradient rounded-full flex items-center justify-center shadow-2xl border border-sky-200/50 overflow-hidden">
-                   <BuddhaAnimation />
+                  <img 
+                    src="/lovable-uploads/8ce6aa5a-7937-4493-b285-7d14f2ec456c.png" 
+                    alt="Peaceful meditation"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 {/* Subtle decorative elements */}
                 <div className="absolute -top-6 -right-6 w-12 h-12 bg-gradient-to-br from-sky-200/60 to-blue-200/60 rounded-full opacity-70 blur-sm"></div>
@@ -103,6 +111,18 @@ export default function EveningReflectionDashboard() {
     );
   }
 
+  // Loading state for authenticated users
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/30 to-blue-50/20 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 animate-spin mx-auto text-sky-500" />
+          <p className="mt-4 text-slate-600 font-light">Loading your peaceful space...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Get current date for display
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -130,14 +150,7 @@ export default function EveningReflectionDashboard() {
           <div className="space-y-10">
             <ReflectionForm onSave={handleSave} />
             <WeeklySummary entries={reflections} />
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-2 border-sky-200 border-t-sky-500 mx-auto"></div>
-                <p className="mt-4 text-slate-500 font-light">Loading your reflections...</p>
-              </div>
-            ) : (
-              <ReflectionLog entries={reflections} />
-            )}
+            <ReflectionLog entries={reflections} />
           </div>
           <div className="space-y-8">
             <QuickLinksPanel />

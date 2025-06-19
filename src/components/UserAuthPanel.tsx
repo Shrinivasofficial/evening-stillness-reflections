@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { LogOut, User as UserIcon, Mail } from "lucide-react";
+import { LogOut, User as UserIcon, Mail, AlertCircle, Loader2 } from "lucide-react";
 import { usePositiveNotification } from "@/hooks/usePositiveNotification";
 import PositiveNotification from "./PositiveNotification";
 
@@ -17,22 +17,39 @@ export default function UserAuthPanel() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [emailError, setEmailError] = useState("");
   const { notification, showNotification, hideNotification } = usePositiveNotification();
 
   React.useEffect(() => {
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      // Only set user if email is confirmed
+      if (session?.user?.email_confirmed_at) {
+        setUser(session.user);
+      } else if (session?.user) {
+        // Sign out unverified users
+        supabase.auth.signOut();
+        showNotification('Please verify your email before signing in.', 'info');
+      }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
+      console.log('Auth event:', event, 'Session:', session);
       
-      if (event === 'SIGNED_IN') {
-        showNotification('Welcome back! You\'re successfully logged in.');
-        setShowVerificationMessage(false);
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Check if email is verified
+        if (session.user.email_confirmed_at) {
+          setUser(session.user);
+          showNotification('Welcome back! You\'re successfully logged in.');
+          setShowVerificationMessage(false);
+        } else {
+          // Sign out unverified users immediately
+          supabase.auth.signOut();
+          showNotification('Please verify your email before signing in.', 'info');
+        }
       } else if (event === 'SIGNED_OUT') {
+        setUser(null);
         showNotification('You\'ve been signed out successfully.');
         setShowVerificationMessage(false);
       }
@@ -41,63 +58,156 @@ export default function UserAuthPanel() {
     return () => subscription.unsubscribe();
   }, [showNotification]);
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError("Please enter a valid email address");
+      return false;
+    }
+    
+    // Basic domain validation
+    const domain = email.split('@')[1];
+    const commonInvalidDomains = ['test.com', 'example.com', 'fake.com', 'invalid.com'];
+    if (commonInvalidDomains.includes(domain.toLowerCase())) {
+      setEmailError("Please use a valid email address");
+      return false;
+    }
+    
+    setEmailError("");
+    return true;
+  };
+
+  const getRedirectUrl = (): string => {
+    const currentUrl = window.location.origin;
+    console.log('Current URL for redirect:', currentUrl);
+    return currentUrl;
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateEmail(email)) {
+      return;
+    }
+    
+    if (password.length < 6) {
+      showNotification('Password must be at least 6 characters long.', 'info');
+      return;
+    }
+    
     setLoading(true);
 
-    // Get the current domain for redirect
-    const currentDomain = window.location.origin;
-    console.log('Attempting sign up with redirect URL:', currentDomain);
+    const redirectUrl = getRedirectUrl();
+    console.log('Attempting sign up with redirect URL:', redirectUrl);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: currentDomain
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
+      });
+
+      if (error) {
+        console.error('Sign up error:', error);
+        if (error.message.includes('already registered')) {
+          showNotification('This email is already registered. Please try signing in instead.', 'info');
+        } else {
+          showNotification(error.message, 'info');
+        }
+        setShowVerificationMessage(false);
+      } else if (data.user && !data.user.email_confirmed_at) {
+        console.log('Sign up successful, showing verification message');
+        setShowVerificationMessage(true);
+        setEmail("");
+        setPassword("");
       }
-    });
-
-    if (error) {
-      console.error('Sign up error:', error);
-      showNotification(error.message, 'info');
-      setShowVerificationMessage(false);
-    } else {
-      console.log('Sign up successful, showing verification message');
-      setShowVerificationMessage(true);
-      setEmail("");
-      setPassword("");
+    } catch (error: any) {
+      console.error('Unexpected sign up error:', error);
+      showNotification('An unexpected error occurred. Please try again.', 'info');
     }
+    
     setLoading(false);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateEmail(email)) {
+      return;
+    }
+    
     setLoading(true);
 
     console.log('Attempting sign in');
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      console.error('Sign in error:', error);
-      if (error.message.includes('Email not confirmed')) {
-        showNotification('Please check your email and click the verification link before signing in.', 'info');
+      if (error) {
+        console.error('Sign in error:', error);
+        if (error.message.includes('Email not confirmed')) {
+          showNotification('Please check your email and click the verification link before signing in.', 'info');
+        } else if (error.message.includes('Invalid login credentials')) {
+          showNotification('Invalid email or password. Please check your credentials.', 'info');
+        } else {
+          showNotification(error.message, 'info');
+        }
+      } else if (data.user && !data.user.email_confirmed_at) {
+        // Extra safety check - sign out unverified users
+        await supabase.auth.signOut();
+        showNotification('Please verify your email before signing in.', 'info');
       } else {
-        showNotification(error.message, 'info');
+        setEmail("");
+        setPassword("");
       }
-    } else {
-      setEmail("");
-      setPassword("");
+    } catch (error: any) {
+      console.error('Unexpected sign in error:', error);
+      showNotification('An unexpected error occurred. Please try again.', 'info');
     }
+    
     setLoading(false);
   };
 
   const handleSignOut = async () => {
     console.log('Signing out');
+    setLoading(true);
     await supabase.auth.signOut();
+    setLoading(false);
+  };
+
+  const handleResendVerification = async () => {
+    if (!email || !validateEmail(email)) {
+      showNotification('Please enter a valid email address first.', 'info');
+      return;
+    }
+    
+    setLoading(true);
+    const redirectUrl = getRedirectUrl();
+    
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
+      });
+      
+      if (error) {
+        showNotification(error.message, 'info');
+      } else {
+        showNotification('Verification email sent! Please check your inbox.', 'info');
+      }
+    } catch (error: any) {
+      showNotification('Failed to resend verification email. Please try again.', 'info');
+    }
+    
+    setLoading(false);
   };
 
   // Show verification message after successful signup
@@ -120,18 +230,35 @@ export default function UserAuthPanel() {
                 <strong>Next steps:</strong>
               </p>
               <ol className="text-sm text-sky-700 mt-2 space-y-1">
-                <li>1. Check your email inbox</li>
+                <li>1. Check your email inbox (and spam folder)</li>
                 <li>2. Click the verification link</li>
                 <li>3. Return here to sign in</li>
               </ol>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowVerificationMessage(false)}
-              className="w-full"
-            >
-              Back to Sign In
-            </Button>
+            <div className="space-y-2">
+              <Button 
+                variant="outline" 
+                onClick={handleResendVerification}
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Resend Verification Email'
+                )}
+              </Button>
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowVerificationMessage(false)}
+                className="w-full"
+              >
+                Back to Sign In
+              </Button>
+            </div>
           </CardContent>
         </Card>
         <PositiveNotification
@@ -152,8 +279,17 @@ export default function UserAuthPanel() {
             <UserIcon size={16} />
             <span>{user.email}</span>
           </div>
-          <Button variant="outline" size="sm" onClick={handleSignOut}>
-            <LogOut size={16} className="mr-1" />
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSignOut}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 size={16} className="mr-1 animate-spin" />
+            ) : (
+              <LogOut size={16} className="mr-1" />
+            )}
             Sign Out
           </Button>
         </div>
@@ -191,9 +327,19 @@ export default function UserAuthPanel() {
                     id="signin-email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError("");
+                    }}
                     required
+                    className={emailError ? "border-red-500" : ""}
                   />
+                  {emailError && (
+                    <div className="flex items-center gap-1 text-sm text-red-600">
+                      <AlertCircle size={14} />
+                      <span>{emailError}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signin-password">Password</Label>
@@ -206,7 +352,14 @@ export default function UserAuthPanel() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Signing in..." : "Sign In"}
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
                 </Button>
               </form>
             </TabsContent>
@@ -219,9 +372,19 @@ export default function UserAuthPanel() {
                     id="signup-email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError("");
+                    }}
                     required
+                    className={emailError ? "border-red-500" : ""}
                   />
+                  {emailError && (
+                    <div className="flex items-center gap-1 text-sm text-red-600">
+                      <AlertCircle size={14} />
+                      <span>{emailError}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
@@ -233,9 +396,17 @@ export default function UserAuthPanel() {
                     required
                     minLength={6}
                   />
+                  <p className="text-xs text-slate-500">Must be at least 6 characters</p>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Creating account..." : "Create Account"}
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Create Account"
+                  )}
                 </Button>
               </form>
             </TabsContent>

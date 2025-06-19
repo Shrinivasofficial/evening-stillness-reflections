@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import { useAuthGuard } from "./useAuthGuard";
 
 export type Reflection = {
   id: string;
@@ -18,42 +18,33 @@ export type Reflection = {
 export function useReflections() {
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isAuthenticated } = useAuthGuard();
 
   useEffect(() => {
-    // Get initial user
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data?.user ?? null);
-      console.log('Initial user check:', data?.user?.email || 'No user');
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      console.log('Auth state changed:', session?.user?.email || 'No user');
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (user) {
+    if (isAuthenticated && user) {
       fetchReflections();
     } else {
       setReflections([]);
       setLoading(false);
     }
-  }, [user]);
+  }, [user, isAuthenticated]);
 
   const fetchReflections = async () => {
+    if (!user || !isAuthenticated) {
+      console.log('No authenticated user, skipping fetch');
+      setReflections([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      console.log('Fetching reflections for user:', user?.email);
+      console.log('Fetching reflections for verified user:', user.email);
       
       const { data, error } = await supabase
         .from('reflections')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('date', { ascending: false });
 
       if (error) {
@@ -81,13 +72,13 @@ export function useReflections() {
   };
 
   const saveReflection = async (reflection: Omit<Reflection, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!user) {
-      console.error('No user found when trying to save reflection');
-      throw new Error('You must be logged in to save reflections');
+    if (!user || !isAuthenticated) {
+      console.error('No authenticated user when trying to save reflection');
+      throw new Error('You must be logged in with a verified email to save reflections');
     }
 
     try {
-      console.log('Saving reflection for user:', user.email);
+      console.log('Saving reflection for verified user:', user.email);
       console.log('Input reflection data:', reflection);
       console.log('Reflection date:', reflection.date);
       console.log('Date type:', typeof reflection.date);
@@ -133,7 +124,8 @@ export function useReflections() {
     reflections,
     loading,
     saveReflection,
-    user,
-    refetch: fetchReflections
+    user: isAuthenticated ? user : null,
+    refetch: fetchReflections,
+    isAuthenticated
   };
 }
