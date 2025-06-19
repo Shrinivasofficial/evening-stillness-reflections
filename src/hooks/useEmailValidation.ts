@@ -11,7 +11,7 @@ export function useEmailValidation() {
   const [isValidating, setIsValidating] = useState(false);
 
   const validateEmail = async (email: string): Promise<EmailValidationResult> => {
-    // Basic email format validation
+    // Very basic email format validation - only reject obviously invalid formats
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return {
@@ -21,13 +21,13 @@ export function useEmailValidation() {
       };
     }
 
-    // Check for obviously invalid domains (very basic list)
+    // Only check for a very small list of obviously fake domains
     const domain = email.split('@')[1].toLowerCase();
-    const obviouslyInvalidDomains = [
-      'test.com', 'example.com', 'fake.com', 'invalid.com'
+    const obviouslyFakeDomains = [
+      'test.com', 'example.com', 'fake.com'
     ];
     
-    if (obviouslyInvalidDomains.includes(domain)) {
+    if (obviouslyFakeDomains.includes(domain)) {
       return {
         isValid: false,
         isDeliverable: false,
@@ -35,16 +35,32 @@ export function useEmailValidation() {
       };
     }
 
-    // Advanced validation (but don't let it fail the whole process)
+    // For most emails, just return valid without complex validation
+    // Only do basic checks that won't fail
     setIsValidating(true);
     
     try {
-      const result = await validateEmailAdvanced(email);
+      // Just a quick check for very common typos, but don't fail otherwise
+      const suggestion = checkForCommonTypos(email, domain);
+      if (suggestion) {
+        setIsValidating(false);
+        return {
+          isValid: false,
+          isDeliverable: false,
+          error: `Did you mean ${suggestion}?`
+        };
+      }
+
+      // If no obvious issues, mark as valid
       setIsValidating(false);
-      return result;
+      return {
+        isValid: true,
+        isDeliverable: true,
+        error: undefined
+      };
     } catch (error) {
       setIsValidating(false);
-      // If advanced validation fails, we'll still allow the email
+      // Always fallback to valid if any error occurs
       return {
         isValid: true,
         isDeliverable: true,
@@ -53,60 +69,12 @@ export function useEmailValidation() {
     }
   };
 
-  const validateEmailAdvanced = async (email: string): Promise<EmailValidationResult> => {
-    const domain = email.split('@')[1].toLowerCase();
-    
-    // Check for common disposable email domains (reduced list)
-    const disposableDomains = [
-      '10minutemail.com', 'tempmail.org', 'guerrillamail.com',
-      'mailinator.com', 'yopmail.com', 'throwaway.email'
-    ];
-    
-    if (disposableDomains.some(d => domain === d)) {
-      return {
-        isValid: false,
-        isDeliverable: false,
-        error: "Temporary email addresses are not allowed"
-      };
-    }
-
-    // Check for common typos in popular domains (suggestions only)
-    const typoSuggestions = checkForTypos(email, domain);
-    if (typoSuggestions) {
-      return {
-        isValid: false,
-        isDeliverable: false,
-        error: `Did you mean ${typoSuggestions}?`
-      };
-    }
-
-    // Try MX record validation but don't fail if it doesn't work
-    try {
-      const mxValidation = await validateMXRecord(domain);
-      if (!mxValidation.isValid) {
-        return {
-          isValid: false,
-          isDeliverable: false,
-          error: "This domain doesn't seem to accept emails"
-        };
-      }
-    } catch (error) {
-      console.log('MX validation failed, allowing email anyway');
-    }
-
-    return {
-      isValid: true,
-      isDeliverable: true,
-      error: undefined
-    };
-  };
-
-  const checkForTypos = (email: string, domain: string): string | null => {
+  const checkForCommonTypos = (email: string, domain: string): string | null => {
+    // Only check for the most common typos
     const commonTypos = {
-      'gmail.com': ['gmai.com', 'gmial.com', 'gmail.co'],
-      'yahoo.com': ['yaho.com', 'yahoo.co', 'yhoo.com'],
-      'hotmail.com': ['hotmai.com', 'hotmail.co'],
-      'outlook.com': ['outlok.com', 'outlook.co']
+      'gmail.com': ['gmai.com', 'gmial.com'],
+      'yahoo.com': ['yaho.com', 'yhoo.com'],
+      'hotmail.com': ['hotmai.com']
     };
 
     for (const [correct, typos] of Object.entries(commonTypos)) {
@@ -115,42 +83,6 @@ export function useEmailValidation() {
       }
     }
     return null;
-  };
-
-  const validateMXRecord = async (domain: string): Promise<{isValid: boolean, error?: string}> => {
-    try {
-      const response = await fetch(`https://cloudflare-dns.com/dns-query?name=${domain}&type=MX`, {
-        headers: {
-          'Accept': 'application/dns-json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('DNS query failed');
-      }
-      
-      const data = await response.json();
-      
-      // Check if we got a proper response and if there are MX records
-      if (data.Status === 0 && data.Answer && data.Answer.length > 0) {
-        return { isValid: true };
-      } else if (data.Status === 3) {
-        // NXDOMAIN - domain doesn't exist
-        return { 
-          isValid: false, 
-          error: "This domain doesn't exist" 
-        };
-      } else {
-        return { 
-          isValid: false, 
-          error: "Domain doesn't accept emails" 
-        };
-      }
-    } catch (error) {
-      console.error('MX record validation error:', error);
-      // If MX validation fails, we'll allow the email
-      throw error;
-    }
   };
 
   return {
