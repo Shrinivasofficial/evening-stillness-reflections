@@ -26,24 +26,38 @@ export default function MeditationTimer() {
     }
   }, [duration, running]);
 
-  // Play notification sound when timer completes
+  // Play iPhone-like notification sound when timer completes
   const playNotificationSound = () => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
     
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    // iPhone message tone sequence (approximation)
+    const playTone = (frequency: number, startTime: number, duration: number, volume: number = 0.3) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + startTime);
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime + startTime);
+      gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + startTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + startTime + duration);
+      
+      oscillator.start(audioContext.currentTime + startTime);
+      oscillator.stop(audioContext.currentTime + startTime + duration);
+    };
+
+    // iPhone-like tri-tone sequence
+    playTone(1000, 0, 0.15, 0.4);      // First tone
+    playTone(800, 0.15, 0.15, 0.4);   // Second tone  
+    playTone(600, 0.3, 0.4, 0.4);     // Third tone (longer)
     
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.2);
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 0.3);
+    // Add a subtle echo effect
+    setTimeout(() => {
+      playTone(1000, 0, 0.1, 0.15);
+      playTone(800, 0.1, 0.1, 0.15);
+      playTone(600, 0.2, 0.3, 0.15);
+    }, 100);
   };
 
   // Start/pause timer
