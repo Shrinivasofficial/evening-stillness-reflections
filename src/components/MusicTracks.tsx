@@ -1,45 +1,88 @@
-
-import React, { useState, useRef } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const calmTracks = [
-  { name: "Rain Sounds", url: "https://www.soundjay.com/misc/sounds/rain-01.wav", duration: "∞" },
-  { name: "Ocean Waves", url: "https://www.soundjay.com/nature/sounds/ocean-1.wav", duration: "∞" },
-  { name: "Forest Birds", url: "https://www.soundjay.com/nature/sounds/forest-1.wav", duration: "∞" },
-  { name: "Tibetan Bowls", url: "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", duration: "∞" },
+  { name: "Rain Sound", url: "https://www.soundjay.com/nature/sounds/rain-01.mp3", duration: "∞" },
+  { name: "Lake Sound", url: "https://www.soundjay.com/nature/sounds/lake-waves-01.mp3", duration: "∞" },
+  { name: "River Sound", url: "https://www.soundjay.com/nature/sounds/river-2.mp3", duration: "∞" },
+  { name: "Stream Sound", url: "https://www.soundjay.com/nature/sounds/stream-3.mp3", duration: "∞" },
+  { name: "Ocean Sound", url: "https://www.soundjay.com/nature/sounds/ocean-wave-1.mp3", duration: "∞" },
 ];
 
-export default function MusicTracks() {
+const MusicTracks = forwardRef(({ sessionRunning }: { sessionRunning: boolean }, ref) => {
   const [currentTrack, setCurrentTrack] = useState<number | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const playTrack = (index: number) => {
-    if (currentTrack === index && isPlaying) {
-      // Pause current track
-      audioRef.current?.pause();
-      setIsPlaying(false);
-    } else {
-      // Play new track or resume
-      if (currentTrack !== index) {
-        setCurrentTrack(index);
-        // Note: Using placeholder audio since we can't load external audio files
-        // In a real app, you'd have your own audio files
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
+  // expose stop()
+  useImperativeHandle(ref, () => ({
+    stop: () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
       }
-      setIsPlaying(true);
+      setCurrentTrack(null);
+    },
+  }));
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || currentTrack === null) return;
+
+    audio.src = calmTracks[currentTrack].url;
+    audio.muted = isMuted;
+    audio.loop = false;
+
+    const playAudio = async () => {
+      try {
+        await audio.play();
+      } catch (err) {
+        console.error("Playback error:", err);
+      }
+    };
+
+    if (sessionRunning) {
+      playAudio();
+    } else {
+      audio.pause();
     }
+  }, [currentTrack, sessionRunning, isMuted]);
+
+  // 🔁 Replays track if it ends before session
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleEnded = () => {
+      if (sessionRunning && currentTrack !== null) {
+        audio.currentTime = 0;
+        audio.play();
+      }
+    };
+
+    audio.addEventListener("ended", handleEnded);
+    return () => {
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, [sessionRunning, currentTrack]);
+
+  const playTrack = (index: number) => {
+    setCurrentTrack((prev) => (prev === index ? null : index));
   };
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
-    if (audioRef.current) {
-      audioRef.current.muted = !isMuted;
-    }
+    setIsMuted((prev) => {
+      const newMute = !prev;
+      if (audioRef.current) audioRef.current.muted = newMute;
+      return newMute;
+    });
   };
 
   return (
@@ -55,15 +98,15 @@ export default function MusicTracks() {
           {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
         </Button>
       </div>
-      
+
       <div className="space-y-2">
         {calmTracks.map((track, index) => (
           <div
             key={index}
             className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-              currentTrack === index 
-                ? 'bg-blue-50 border-blue-200' 
-                : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+              currentTrack === index
+                ? "bg-blue-50 border-blue-200"
+                : "bg-gray-50 border-gray-200 hover:bg-gray-100"
             }`}
           >
             <div className="flex-1">
@@ -76,22 +119,19 @@ export default function MusicTracks() {
               onClick={() => playTrack(index)}
               className="h-8 w-8 p-0"
             >
-              {currentTrack === index && isPlaying ? (
-                <Pause className="w-4 h-4" />
-              ) : (
-                <Play className="w-4 h-4" />
-              )}
+              {currentTrack === index ? <Pause /> : <Play />}
             </Button>
           </div>
         ))}
       </div>
-      
+
       <p className="text-xs text-gray-500 text-center">
         Start your meditation timer and play calming sounds
       </p>
-      
-      {/* Hidden audio element for future implementation */}
-      <audio ref={audioRef} loop muted={isMuted} />
+
+      <audio ref={audioRef} />
     </div>
   );
-}
+});
+
+export default MusicTracks;

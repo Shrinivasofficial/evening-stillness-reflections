@@ -32,7 +32,7 @@ export default function EveningReflectionDashboard() {
         <header className="w-full px-8 py-6 flex items-center justify-between bg-white/80 backdrop-blur-sm border-b border-sky-100">
           <div className="flex items-center">
             <h1 className="text-3xl font-light text-slate-800 tracking-wide" style={{ fontFamily: "'Crimson Text', serif" }}>
-              Peace
+              Still
             </h1>
           </div>
           
@@ -133,7 +133,7 @@ export default function EveningReflectionDashboard() {
       <header className="w-full px-6 py-5 border-b border-sky-100 bg-white/90 backdrop-blur-sm flex items-center justify-between mb-6">
         <div className="flex flex-col">
           <div className="text-2xl font-light tracking-wide text-slate-800" style={{ fontFamily: "'Crimson Text', serif" }}>
-            Peace - Evening Reflection Journal
+            Still - Evening Reflection Journal
           </div>
           <div className="text-sm text-slate-500 mt-1">
             {currentDate}

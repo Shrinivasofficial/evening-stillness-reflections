@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Timer as TimerIcon, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,55 +11,32 @@ function formatTime(s: number) {
   return `${m}:${ss.toString().padStart(2, "0")}`;
 }
 
-export default function MeditationTimer() {
+export default function MeditationTimer({
+  onComplete,
+  onRunningChange,
+}: {
+  onComplete?: () => void;
+  onRunningChange?: (running: boolean) => void;
+}) {
   const [duration, setDuration] = useState(DEFAULT_DURATION);
   const [seconds, setSeconds] = useState(duration);
   const [running, setRunning] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const interval = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Update seconds when duration changes
+  // Keep seconds in sync with duration when not running
   useEffect(() => {
     if (!running) {
       setSeconds(duration);
     }
   }, [duration, running]);
 
-  // Play iPhone-like notification sound when timer completes
-  const playNotificationSound = () => {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    // iPhone message tone sequence (approximation)
-    const playTone = (frequency: number, startTime: number, duration: number, volume: number = 0.3) => {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + startTime);
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime + startTime);
-      gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + startTime + 0.01);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + startTime + duration);
-      
-      oscillator.start(audioContext.currentTime + startTime);
-      oscillator.stop(audioContext.currentTime + startTime + duration);
-    };
+  // 🔄 Inform parent of running state
+  useEffect(() => {
+    if (onRunningChange) onRunningChange(running);
+  }, [running]);
 
-    // iPhone-like tri-tone sequence
-    playTone(1000, 0, 0.15, 0.4);      // First tone
-    playTone(800, 0.15, 0.15, 0.4);   // Second tone  
-    playTone(600, 0.3, 0.4, 0.4);     // Third tone (longer)
-    
-    // Add a subtle echo effect
-    setTimeout(() => {
-      playTone(1000, 0, 0.1, 0.15);
-      playTone(800, 0.1, 0.1, 0.15);
-      playTone(600, 0.2, 0.3, 0.15);
-    }, 100);
-  };
-
-  // Start/pause timer
+  // 🔔 Timer logic + audio notification
   useEffect(() => {
     if (running && seconds > 0) {
       interval.current = setInterval(() => {
@@ -69,15 +45,48 @@ export default function MeditationTimer() {
     } else if (!running && interval.current) {
       clearInterval(interval.current);
     }
+
     if (seconds === 0 && interval.current) {
       clearInterval(interval.current);
       setRunning(false);
       playNotificationSound();
+      if (onComplete) onComplete();
     }
+
     return () => {
       if (interval.current) clearInterval(interval.current);
     };
   }, [running, seconds]);
+
+  const playNotificationSound = () => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+    const playTone = (frequency: number, startTime: number, duration: number, volume = 0.3) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + startTime);
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime + startTime);
+      gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + startTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + startTime + duration);
+
+      oscillator.start(audioContext.currentTime + startTime);
+      oscillator.stop(audioContext.currentTime + startTime + duration);
+    };
+
+    playTone(1000, 0, 0.15, 0.4); // tri-tone
+    playTone(800, 0.15, 0.15, 0.4);
+    playTone(600, 0.3, 0.4, 0.4);
+
+    setTimeout(() => {
+      playTone(1000, 0, 0.1, 0.15);
+      playTone(800, 0.1, 0.1, 0.15);
+      playTone(600, 0.2, 0.3, 0.15);
+    }, 100);
+  };
 
   const handleStart = () => setRunning(true);
   const handlePause = () => setRunning(false);
@@ -110,7 +119,7 @@ export default function MeditationTimer() {
             <Settings size={16} />
           </Button>
         </div>
-        
+
         <div className="mb-4">
           <div
             className={`mx-auto flex items-center justify-center rounded-full transition-all duration-200 ${
@@ -123,14 +132,19 @@ export default function MeditationTimer() {
             </div>
           </div>
         </div>
-        
+
         <div className="flex gap-2 mb-2">
           {running ? (
             <Button variant="secondary" className="rounded-full px-5" onClick={handlePause}>
               Pause
             </Button>
           ) : (
-            <Button variant="default" className="rounded-full px-5" onClick={handleStart} disabled={seconds === 0}>
+            <Button
+              variant="default"
+              className="rounded-full px-5"
+              onClick={handleStart}
+              disabled={seconds === 0}
+            >
               Start
             </Button>
           )}
@@ -138,15 +152,14 @@ export default function MeditationTimer() {
             Reset
           </Button>
         </div>
-        
+
         {seconds === 0 && (
           <div className="text-center text-green-600 pt-2 text-sm font-medium">
             🙏 Session complete! Well done.
           </div>
         )}
       </div>
-      
-      {/* Settings Panel */}
+
       {showSettings && (
         <div className="absolute top-full mt-2 left-0 right-0 z-10">
           <TimerSettings
