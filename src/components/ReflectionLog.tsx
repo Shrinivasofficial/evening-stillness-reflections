@@ -85,3 +85,6 @@ export default function ReflectionLog({ entries }: Props) {
     </SoftCard>
   );
 }
+
+
+
