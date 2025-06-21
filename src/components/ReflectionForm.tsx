@@ -1,16 +1,23 @@
-
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { X } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import SoftCard from "./SoftCard";
 import { usePositiveNotification } from "@/hooks/usePositiveNotification";
@@ -31,15 +38,25 @@ interface ReflectionFormProps {
 
 const moodLabels = {
   1: "😔 Struggling",
-  2: "😐 Okay", 
+  2: "😐 Okay",
   3: "🙂 Good",
   4: "😊 Great",
-  5: "🌟 Amazing"
+  5: "🌟 Amazing",
 };
 
 const presetTags = [
-  "Gratitude", "Work", "Family", "Health", "Learning", "Creativity", 
-  "Exercise", "Mindfulness", "Relationships", "Goals", "Challenges", "Growth"
+  "Gratitude",
+  "Work",
+  "Family",
+  "Health",
+  "Learning",
+  "Creativity",
+  "Exercise",
+  "Mindfulness",
+  "Relationships",
+  "Goals",
+  "Challenges",
+  "Growth",
 ];
 
 export default function ReflectionForm({ onSave }: ReflectionFormProps) {
@@ -50,18 +67,17 @@ export default function ReflectionForm({ onSave }: ReflectionFormProps) {
   const [again, setAgain] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const { notification, showNotification, hideNotification } = usePositiveNotification();
+  const { notification, showNotification, hideNotification } =
+    usePositiveNotification();
 
   const toggleTag = (tag: string) => {
-    if (tags.includes(tag)) {
-      setTags(tags.filter(t => t !== tag));
-    } else {
-      setTags([...tags, tag]);
-    }
+    setTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
   };
 
   const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,178 +90,192 @@ export default function ReflectionForm({ onSave }: ReflectionFormProps) {
       well: well.trim(),
       short: short.trim(),
       again: again.trim(),
-      tags
+      tags,
     };
-
-    console.log('Creating reflection entry with date:', entry.date);
-    console.log('Full entry data:', entry);
 
     try {
       await onSave(entry);
-      showNotification('Reflection saved successfully');
-      
-      // Reset form
+      showNotification("Reflection saved successfully");
+
       setMood(3);
       setWell("");
       setShort("");
       setAgain("");
       setTags([]);
     } catch (error) {
-      console.error('Error saving reflection:', error);
-      showNotification('Failed to save reflection. Please try again.', 'info');
+      console.error("Error saving reflection:", error);
+      showNotification("Failed to save reflection. Please try again.", "info");
     }
-    
+
     setLoading(false);
   };
 
   return (
     <>
-      <SoftCard className="animate-fade-in">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-800">Daily Reflection</CardTitle>
-          <CardDescription>
-            Take a moment to reflect on your day with kindness and awareness.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Date Selection */}
-            <div className="space-y-2">
-              <Label className="text-base font-medium">Reflection Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+      <SoftCard className="animate-fade-in px-4 sm:px-6 md:px-8">
+        <div className="max-w-screen-sm mx-auto">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-gray-800">
+              Daily Reflection
+            </CardTitle>
+            <CardDescription>
+              Take a moment to reflect on your day with kindness and awareness.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Date Selection */}
+              <div className="space-y-2">
+                <Label className="text-base font-medium">Reflection Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(selectedDate) => selectedDate && setDate(selectedDate)}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+  mode="single"
+  selected={date}
+  onSelect={(selectedDate) => {
+    if (selectedDate && selectedDate <= new Date()) {
+      setDate(selectedDate);
+    }
+  }}
+  disabled={(date) => date > new Date()}
+  initialFocus
+  className="p-3 pointer-events-auto"
+/>
 
-            {/* Mood Selection */}
-            <div className="space-y-3">
-              <Label className="text-base font-medium">How are you feeling today?</Label>
-              <div className="flex gap-2 flex-wrap">
-                {Object.entries(moodLabels).map(([value, label]) => (
-                  <Button
-                    key={value}
-                    type="button"
-                    variant={mood === parseInt(value) ? "default" : "outline"}
-                    className="flex-1 min-w-fit text-sm"
-                    onClick={() => setMood(parseInt(value))}
-                  >
-                    {label}
-                  </Button>
-                ))}
+                  </PopoverContent>
+                </Popover>
               </div>
-            </div>
 
-            {/* Reflection Questions */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="well" className="text-base font-medium">
-                  What did I do well today?
+              {/* Mood Selection */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">
+                  How are you feeling today?
                 </Label>
-                <Textarea
-                  id="well"
-                  value={well}
-                  onChange={(e) => setWell(e.target.value)}
-                  placeholder="Celebrate your wins, no matter how small..."
-                  className="min-h-[100px] resize-none"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="short" className="text-base font-medium">
-                  Where did I fall short?
-                </Label>
-                <Textarea
-                  id="short"
-                  value={short}
-                  onChange={(e) => setShort(e.target.value)}
-                  placeholder="Reflect with compassion, not judgment..."
-                  className="min-h-[100px] resize-none"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="again" className="text-base font-medium">
-                  What can I try again tomorrow?
-                </Label>
-                <Textarea
-                  id="again"
-                  value={again}
-                  onChange={(e) => setAgain(e.target.value)}
-                  placeholder="Focus on growth and learning..."
-                  className="min-h-[100px] resize-none"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Tags Selection */}
-            <div className="space-y-3">
-              <Label className="text-base font-medium">Select relevant tags</Label>
-              <div className="flex flex-wrap gap-2">
-                {presetTags.map((tag) => (
-                  <Button
-                    key={tag}
-                    type="button"
-                    variant={tags.includes(tag) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => toggleTag(tag)}
-                    className="text-sm"
-                  >
-                    {tag}
-                  </Button>
-                ))}
-              </div>
-              {tags.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-sm text-gray-600 mb-2">Selected tags:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                        {tag}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 hover:bg-transparent"
-                          onClick={() => removeTag(tag)}
-                        >
-                          <X size={12} />
-                        </Button>
-                      </Badge>
-                    ))}
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(moodLabels).map(([value, label]) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={mood === parseInt(value) ? "default" : "outline"}
+                      className="text-sm px-3"
+                      onClick={() => setMood(parseInt(value))}
+                    >
+                      {label}
+                    </Button>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Saving..." : "Save Reflection"}
-            </Button>
-          </form>
-        </CardContent>
+              {/* Reflection Questions */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="well" className="text-base font-medium">
+                    What did I do well today?
+                  </Label>
+                  <Textarea
+                    id="well"
+                    value={well}
+                    onChange={(e) => setWell(e.target.value)}
+                    placeholder="Celebrate your wins, no matter how small..."
+                    className="min-h-[100px] resize-none w-full"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="short" className="text-base font-medium">
+                    Where did I fall short?
+                  </Label>
+                  <Textarea
+                    id="short"
+                    value={short}
+                    onChange={(e) => setShort(e.target.value)}
+                    placeholder="Reflect with compassion, not judgment..."
+                    className="min-h-[100px] resize-none w-full"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="again" className="text-base font-medium">
+                    What can I try again tomorrow?
+                  </Label>
+                  <Textarea
+                    id="again"
+                    value={again}
+                    onChange={(e) => setAgain(e.target.value)}
+                    placeholder="Focus on growth and learning..."
+                    className="min-h-[100px] resize-none w-full"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Tags Selection */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium">Select relevant tags</Label>
+                <div className="flex flex-wrap gap-2">
+                  {presetTags.map((tag) => (
+                    <Button
+                      key={tag}
+                      type="button"
+                      variant={tags.includes(tag) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleTag(tag)}
+                      className="text-sm px-3"
+                    >
+                      {tag}
+                    </Button>
+                  ))}
+                </div>
+
+                {tags.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-sm text-gray-600 mb-2">Selected tags:</p>
+                    <div className="flex flex-wrap gap-2 overflow-x-auto">
+                      {tags.map((tag) => (
+                        <Badge
+                          key={tag}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          {tag}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-4 w-4 p-0 hover:bg-transparent"
+                            onClick={() => removeTag(tag)}
+                          >
+                            <X size={12} />
+                          </Button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Saving..." : "Save Reflection"}
+              </Button>
+            </form>
+          </CardContent>
+        </div>
       </SoftCard>
+
       <PositiveNotification
         message={notification.message}
         isVisible={notification.isVisible}

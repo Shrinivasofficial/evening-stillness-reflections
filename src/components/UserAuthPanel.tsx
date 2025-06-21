@@ -1,3 +1,5 @@
+// ✅ Full working version of UserAuthPanel.tsx with proper message keys
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,10 +31,10 @@ export default function UserAuthPanel() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user);
-        showNotification("You're signed in!");
+        showNotification("welcome back! you're successfully logged in.", "info");
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
-        showNotification("Signed out successfully.");
+        showNotification("you've been signed out successfully", "info");
       }
     });
 
@@ -79,16 +81,51 @@ export default function UserAuthPanel() {
     }
   };
 
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+  
+    if (emailValidationState === 'invalid') {
+      showNotification("📮 Please enter a valid email address.", "info");
+      return;
+    }
+  
+    setLoading(true);
+  
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  
+      if (error) {
+        console.error("Sign in error:", error);
+        showNotification("⚠️ " + error.message, "info");
+      } else if (!data.user?.email_confirmed_at) {
+        await supabase.auth.signOut(); // force logout
+        showNotification("📩 Please verify your email address before logging in.", "info");
+      } else {
+        setEmail("");
+        setPassword("");
+        setEmailValidationState("idle");
+        showNotification("🙏 Welcome back, peaceful soul. Your journey of reflection continues.", "info");
+      }
+    } catch (error: any) {
+      console.error("Unexpected sign in error:", error);
+      showNotification("❌ An unexpected error occurred. Please try again.", "info");
+    }
+  
+    setLoading(false);
+  };
+  
+  
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
   
     if (emailValidationState !== 'valid') {
-      showNotification('Please enter a valid email address.', 'info');
+      showNotification("📮 Please enter a valid email address.", "info");
       return;
     }
   
     if (password.length < 6) {
-      showNotification('Password must be at least 6 characters long.', 'info');
+      showNotification("🔒 Password must be at least 6 characters long.", "info");
       return;
     }
   
@@ -98,62 +135,29 @@ export default function UserAuthPanel() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/verify`, // 👈 must be allowed in Supabase settings
+        },
       });
   
       if (error) {
-        console.error('Sign up error:', error);
-        if (error.message.includes('already registered')) {
-          showNotification('This email is already registered. Please try signing in instead.', 'info');
-        } else {
-          showNotification(error.message, 'info');
-        }
+        console.error("Sign up error:", error);
+        showNotification("⚠️ " + error.message, "info");
       } else {
-        showNotification('Account created! You can now sign in.', 'info');
+        showNotification("📧 A verification link has been sent to your inbox. Please verify your email before logging in.", "info");
         setEmail("");
         setPassword("");
-        setEmailValidationState('idle');
+        setEmailValidationState("idle");
       }
     } catch (error: any) {
-      console.error('Unexpected sign up error:', error);
-      showNotification('An unexpected error occurred. Please try again.', 'info');
+      console.error("Unexpected sign up error:", error);
+      showNotification("❌ An unexpected error occurred. Please try again.", "info");
     }
   
     setLoading(false);
   };
   
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (emailValidationState === 'invalid') {
-      showNotification('Please enter a valid email address.', 'info');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('Sign in error:', error);
-        showNotification(error.message, 'info');
-      } else {
-        setEmail("");
-        setPassword("");
-        setEmailValidationState('idle');
-      }
-    } catch (error: any) {
-      console.error('Unexpected sign in error:', error);
-      showNotification('An unexpected error occurred. Please try again.', 'info');
-    }
-
-    setLoading(false);
-  };
-
+  
   const handleSignOut = async () => {
     setLoading(true);
     await supabase.auth.signOut();
@@ -172,7 +176,12 @@ export default function UserAuthPanel() {
             {loading ? <Loader2 size={16} className="mr-1 animate-spin" /> : <LogOut size={16} className="mr-1" />} Sign Out
           </Button>
         </div>
-        <PositiveNotification message={notification.message} isVisible={notification.isVisible} onClose={hideNotification} type={notification.type} />
+        <PositiveNotification
+          message={notification.message}
+          isVisible={notification.isVisible}
+          onClose={hideNotification}
+          type={notification.type}
+        />
       </>
     );
   }
@@ -204,7 +213,13 @@ export default function UserAuthPanel() {
                       value={email}
                       onChange={(e) => handleEmailChange(e.target.value)}
                       required
-                      className={`pr-10 ${emailError ? "border-red-500" : emailValidationState === 'valid' ? "border-green-500" : ""}`}
+                      className={`pr-10 ${
+                        emailError
+                          ? "border-red-500"
+                          : emailValidationState === "valid"
+                          ? "border-green-500"
+                          : ""
+                      }`}
                     />
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                       {getEmailInputIcon()}
@@ -230,7 +245,7 @@ export default function UserAuthPanel() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={loading || isValidating || emailValidationState === 'validating'}
+                  disabled={loading || isValidating || emailValidationState === "validating"}
                 >
                   {loading ? (
                     <>
@@ -255,7 +270,13 @@ export default function UserAuthPanel() {
                       value={email}
                       onChange={(e) => handleEmailChange(e.target.value)}
                       required
-                      className={`pr-10 ${emailError ? "border-red-500" : emailValidationState === 'valid' ? "border-green-500" : ""}`}
+                      className={`pr-10 ${
+                        emailError
+                          ? "border-red-500"
+                          : emailValidationState === "valid"
+                          ? "border-green-500"
+                          : ""
+                      }`}
                     />
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                       {getEmailInputIcon()}
@@ -283,7 +304,7 @@ export default function UserAuthPanel() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={loading || isValidating || emailValidationState !== 'valid'}
+                  disabled={loading || isValidating || emailValidationState !== "valid"}
                 >
                   {loading ? (
                     <>
@@ -299,7 +320,13 @@ export default function UserAuthPanel() {
           </Tabs>
         </CardContent>
       </Card>
-      <PositiveNotification message={notification.message} isVisible={notification.isVisible} onClose={hideNotification} type={notification.type} />
+
+      <PositiveNotification
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+        type={notification.type}
+      />
     </>
   );
 }

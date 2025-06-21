@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Check, X, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,16 +9,17 @@ interface PositiveNotificationProps {
   type?: 'success' | 'info';
 }
 
-const positiveMessages = {
+const positiveMessages: Record<string, string> = {
   'email verification sent': "📧 A verification link has been sent to your email! Please check your inbox and click the link to activate your account.",
   'please check your email to verify your account': "📧 A verification link has been sent to your email! Please check your inbox and click the link to activate your account.",
   'reflection saved': "🌟 Your beautiful reflection has been safely stored. You're building something wonderful!",
   'reflection saved successfully': "🌟 Your beautiful reflection has been safely stored. You're building something wonderful!",
   'welcome back': "🙏 Welcome back, peaceful soul. Your journey of reflection continues.",
-  'welcome back! you\'re successfully logged in.': "🙏 Welcome back, peaceful soul. Your journey of reflection continues.",
+  "welcome back! you're successfully logged in.": "🙏 Welcome back, peaceful soul. Your journey of reflection continues.",
   'signed out': "☮️ Until we meet again. May peace be with you.",
-  'you\'ve been signed out successfully': "☮️ Until we meet again. May peace be with you.",
-  'default': "✨ Something wonderful just happened! Keep shining bright."
+  "you've been signed out successfully": "☮️ Until we meet again. May peace be with you.",
+  "you're already registered! please sign in instead.": "👋 Looks like you’re already part of the fam! Try signing in instead.",
+  'email not found or wrong password. try signing up if you\'re new!': "🚪 Couldn’t find your account. Wanna create one and start your journey?"
 };
 
 export default function PositiveNotification({ 
@@ -35,8 +35,8 @@ export default function PositiveNotification({
       setShow(true);
       const timer = setTimeout(() => {
         setShow(false);
-        setTimeout(onClose, 300); // Wait for fade out animation
-      }, type === 'info' ? 6000 : 3000); // Show info messages longer, success messages for 3 seconds
+        setTimeout(onClose, 300); // Wait for fade-out
+      }, type === 'info' ? 6000 : 3000);
       return () => clearTimeout(timer);
     }
   }, [isVisible, onClose, type]);
@@ -44,31 +44,22 @@ export default function PositiveNotification({
   if (!isVisible && !show) return null;
 
   const getPositiveMessage = (originalMessage: string) => {
-    const key = Object.keys(positiveMessages).find(k => 
-      originalMessage.toLowerCase().includes(k.toLowerCase())
-    );
-    return key ? positiveMessages[key as keyof typeof positiveMessages] : positiveMessages.default;
+    const normalized = originalMessage.toLowerCase().trim();
+    return positiveMessages[normalized] || originalMessage;
   };
 
   const getIcon = () => {
-    if (type === 'info') {
-      return <Info className="w-5 h-5 text-sky-600" />;
-    }
-    return <Check className="w-5 h-5 text-green-600" />;
+    return type === 'info'
+      ? <Info className="w-5 h-5 text-sky-600" />
+      : <Check className="w-5 h-5 text-green-600" />;
   };
 
   const getBackgroundColor = () => {
-    if (type === 'info') {
-      return 'bg-sky-100';
-    }
-    return 'bg-green-100';
+    return type === 'info' ? 'bg-sky-100' : 'bg-green-100';
   };
 
   const getBorderColor = () => {
-    if (type === 'info') {
-      return 'border-sky-200';
-    }
-    return 'border-green-200';
+    return type === 'info' ? 'border-sky-200' : 'border-green-200';
   };
 
   return (
