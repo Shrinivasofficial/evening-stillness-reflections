@@ -136,7 +136,7 @@ export default function UserAuthPanel() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/verify`, // 👈 must be allowed in Supabase settings
+          emailRedirectTo: "https://evening-stillness-reflections.vercel.app/", // 👈 must be allowed in Supabase settings
         },
       });
   
