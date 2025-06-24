@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthGuard } from "./useAuthGuard";
+import { format } from 'date-fns';
 
 export type Reflection = {
   id: string;
@@ -84,9 +84,9 @@ export function useReflections() {
       console.log('Date type:', typeof reflection.date);
 
       // Ensure date is properly formatted
-      const dateString = reflection.date instanceof Date 
-        ? reflection.date.toISOString().split('T')[0]
-        : new Date().toISOString().split('T')[0];
+      const dateString = reflection.date instanceof Date
+        ? format(reflection.date, 'yyyy-MM-dd')
+        : format(new Date(), 'yyyy-MM-dd');
 
       const reflectionData = {
         user_id: user.id,
@@ -120,10 +120,54 @@ export function useReflections() {
     }
   };
 
+  const updateReflection = async (
+    id: string,
+    updates: Partial<Omit<Reflection, 'id' | 'created_at' | 'updated_at' | 'date'> & { date?: string }>
+  ) => {
+    if (!user || !isAuthenticated) {
+      throw new Error('You must be logged in with a verified email to update reflections');
+    }
+    try {
+      const { data, error } = await supabase
+        .from('reflections')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setReflections((prev) => prev.map(r => r.id === id ? { ...r, ...updates, date: updates.date ? new Date(updates.date) : r.date, updated_at: new Date().toISOString() } : r));
+      }
+      return id;
+    } catch (error) {
+      console.error('Error updating reflection:', error);
+      throw error;
+    }
+  };
+
+  const deleteReflection = async (id: string) => {
+    if (!user || !isAuthenticated) {
+      throw new Error('You must be logged in with a verified email to delete reflections');
+    }
+    try {
+      const { error } = await supabase
+        .from('reflections')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      setReflections((prev) => prev.filter(r => r.id !== id));
+      return id;
+    } catch (error) {
+      console.error('Error deleting reflection:', error);
+      throw error;
+    }
+  };
+
   return {
     reflections,
     loading,
     saveReflection,
+    updateReflection,
+    deleteReflection,
     user: isAuthenticated ? user : null,
     refetch: fetchReflections,
     isAuthenticated

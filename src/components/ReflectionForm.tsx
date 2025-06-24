@@ -34,6 +34,7 @@ interface ReflectionEntry {
 
 interface ReflectionFormProps {
   onSave: (entry: ReflectionEntry) => Promise<void>;
+  initialEntry?: ReflectionEntry;
 }
 
 const moodLabels = {
@@ -59,13 +60,13 @@ const presetTags = [
   "Growth",
 ];
 
-export default function ReflectionForm({ onSave }: ReflectionFormProps) {
-  const [date, setDate] = useState<Date>(new Date());
-  const [mood, setMood] = useState(3);
-  const [well, setWell] = useState("");
-  const [short, setShort] = useState("");
-  const [again, setAgain] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+export default function ReflectionForm({ onSave, initialEntry }: ReflectionFormProps) {
+  const [date, setDate] = useState<Date>(initialEntry?.date ? new Date(initialEntry.date) : new Date());
+  const [mood, setMood] = useState(initialEntry?.mood ?? 3);
+  const [well, setWell] = useState(initialEntry?.well ?? "");
+  const [short, setShort] = useState(initialEntry?.short ?? "");
+  const [again, setAgain] = useState(initialEntry?.again ?? "");
+  const [tags, setTags] = useState<string[]>(initialEntry?.tags ?? []);
   const [loading, setLoading] = useState(false);
   const { notification, showNotification, hideNotification } =
     usePositiveNotification();
@@ -83,7 +84,6 @@ export default function ReflectionForm({ onSave }: ReflectionFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     const entry: ReflectionEntry = {
       date,
       mood,
@@ -92,21 +92,20 @@ export default function ReflectionForm({ onSave }: ReflectionFormProps) {
       again: again.trim(),
       tags,
     };
-
     try {
       await onSave(entry);
       showNotification("Reflection saved successfully");
-
-      setMood(3);
-      setWell("");
-      setShort("");
-      setAgain("");
-      setTags([]);
+      if (!initialEntry) {
+        setMood(3);
+        setWell("");
+        setShort("");
+        setAgain("");
+        setTags([]);
+      }
     } catch (error) {
       console.error("Error saving reflection:", error);
       showNotification("Failed to save reflection. Please try again.", "info");
     }
-
     setLoading(false);
   };
 
