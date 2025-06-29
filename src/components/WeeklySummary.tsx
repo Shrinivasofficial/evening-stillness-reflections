@@ -1,18 +1,14 @@
-
 import React from "react";
 import SoftCard from "./SoftCard";
 import SectionHeading from "./SectionHeading";
 import { LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { Tag, TrendingUp, Calendar } from "lucide-react";
+import { useReflections } from "../hooks/useReflections";
 
 type Entry = {
   date: Date;
   mood: number;
   tags: string[];
-};
-
-type Props = {
-  entries: Entry[];
 };
 
 function getWeeklyData(entries: Entry[]) {
@@ -47,11 +43,27 @@ function getMoodEmoji(mood: number) {
   return moodEmojis[mood as keyof typeof moodEmojis] || "😐";
 }
 
-export default function WeeklySummary({ entries }: Props) {
-  if (entries.length === 0) return null;
+export default function WeeklySummary() {
+  const { reflections, loading } = useReflections();
   
-  const data = getWeeklyData(entries);
-  const recentEntries = entries.slice(-7);
+  if (loading) {
+    return (
+      <SoftCard className="animate-fade-in">
+        <div className="flex items-center gap-2 mb-6">
+          <Calendar className="w-5 h-5 text-sky-600" />
+          <h3 className="text-lg font-semibold text-gray-800">Weekly Summary</h3>
+        </div>
+        <div className="text-muted-foreground text-sm p-4 text-center">
+          Loading your weekly summary...
+        </div>
+      </SoftCard>
+    );
+  }
+  
+  if (reflections.length === 0) return null;
+  
+  const data = getWeeklyData(reflections);
+  const recentEntries = reflections.slice(-7);
   
   // Calculate average mood
   const validMoods = data.filter(d => d.mood !== null).map(d => d.mood!);

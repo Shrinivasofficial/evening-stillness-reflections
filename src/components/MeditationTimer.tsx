@@ -14,14 +14,19 @@ function formatTime(s: number) {
 export default function MeditationTimer({
   onComplete,
   onRunningChange,
+  setDuration: setDurationProp,
+  sessionCompleted,
 }: {
   onComplete?: () => void;
   onRunningChange?: (running: boolean) => void;
+  setDuration?: (duration: number) => void;
+  sessionCompleted?: boolean;
 }) {
   const [duration, setDuration] = useState(DEFAULT_DURATION);
   const [seconds, setSeconds] = useState(duration);
   const [running, setRunning] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [hasCompleted, setHasCompleted] = useState(false);
   const interval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Keep seconds in sync with duration when not running
@@ -46,9 +51,10 @@ export default function MeditationTimer({
       clearInterval(interval.current);
     }
 
-    if (seconds === 0 && interval.current) {
+    if (seconds === 0 && interval.current && !hasCompleted) {
       clearInterval(interval.current);
       setRunning(false);
+      setHasCompleted(true);
       playNotificationSound();
       if (onComplete) onComplete();
     }
@@ -56,7 +62,7 @@ export default function MeditationTimer({
     return () => {
       if (interval.current) clearInterval(interval.current);
     };
-  }, [running, seconds]);
+  }, [running, seconds, hasCompleted]);
 
   const playNotificationSound = () => {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -88,15 +94,22 @@ export default function MeditationTimer({
     }, 100);
   };
 
-  const handleStart = () => setRunning(true);
+  const handleStart = () => {
+    setRunning(true);
+    setHasCompleted(false); // Reset completion state when starting
+  };
+  
   const handlePause = () => setRunning(false);
+  
   const handleReset = () => {
     setRunning(false);
     setSeconds(duration);
+    setHasCompleted(false); // Reset completion state when resetting
   };
 
   const handleDurationChange = (newDuration: number) => {
     setDuration(newDuration);
+    if (setDurationProp) setDurationProp(newDuration);
     if (!running) {
       setSeconds(newDuration);
     }
@@ -154,8 +167,16 @@ export default function MeditationTimer({
         </div>
 
         {seconds === 0 && (
-          <div className="text-center text-green-600 pt-2 text-sm font-medium">
-            🙏 Session complete! Well done.
+          <div className="text-center pt-2 text-sm font-medium">
+            {sessionCompleted ? (
+              <div className="text-green-600 animate-pulse">
+                🎉 Session saved! Great job!
+              </div>
+            ) : (
+              <div className="text-green-600">
+                🙏 Session complete! Well done.
+              </div>
+            )}
           </div>
         )}
       </div>

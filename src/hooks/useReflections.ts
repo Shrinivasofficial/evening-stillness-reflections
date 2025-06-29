@@ -78,28 +78,32 @@ export function useReflections() {
     }
 
     try {
+      console.log('=== SAVE REFLECTION START ===');
       console.log('Saving reflection for verified user:', user.email);
       console.log('Input reflection data:', reflection);
-      console.log('Reflection date:', reflection.date);
-      console.log('Date type:', typeof reflection.date);
 
-      // Ensure date is properly formatted
+      // Ensure date is properly formatted as YYYY-MM-DD
       const dateString = reflection.date instanceof Date
         ? format(reflection.date, 'yyyy-MM-dd')
-        : format(new Date(), 'yyyy-MM-dd');
+        : typeof reflection.date === 'string' 
+          ? reflection.date 
+          : format(new Date(), 'yyyy-MM-dd');
+
+      console.log('Formatted date string:', dateString);
 
       const reflectionData = {
         user_id: user.id,
         date: dateString,
         mood: reflection.mood,
-        well: reflection.well,
-        short: reflection.short,
-        again: reflection.again,
+        well: reflection.well.trim(),
+        short: reflection.short.trim(),
+        again: reflection.again.trim(),
         tags: reflection.tags || []
       };
 
       console.log('Formatted reflection data for Supabase:', reflectionData);
 
+      // Use upsert to ensure only one reflection per day
       const { data, error } = await supabase
         .from('reflections')
         .upsert(reflectionData, {
@@ -107,13 +111,34 @@ export function useReflections() {
         })
         .select();
 
+      console.log('Upsert result:', { data, error });
+
       if (error) {
         console.error('Supabase error saving reflection:', error);
         throw error;
       }
       
       console.log('Reflection saved successfully:', data);
-      await fetchReflections(); // Refresh the list
+      console.log('=== SAVE REFLECTION END ===');
+      
+      // Update local state instead of refetching to avoid race conditions
+      if (data && data.length > 0) {
+        const savedReflection = data[0];
+        setReflections(prev => {
+          // Remove any existing reflection for the same date
+          const filtered = prev.filter(r => {
+            const rDate = r.date instanceof Date ? format(r.date, 'yyyy-MM-dd') : r.date;
+            return rDate !== dateString;
+          });
+          
+          // Add the new/updated reflection at the beginning
+          return [{
+            ...savedReflection,
+            date: new Date(savedReflection.date),
+            tags: savedReflection.tags || []
+          }, ...filtered];
+        });
+      }
     } catch (error) {
       console.error('Error saving reflection:', error);
       throw error;

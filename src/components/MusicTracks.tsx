@@ -16,7 +16,7 @@ const calmTracks = [
   { name: "Ocean Sound", url: "https://www.soundjay.com/nature/sounds/ocean-wave-1.mp3", duration: "∞" },
 ];
 
-const MusicTracks = forwardRef(({ sessionRunning }: { sessionRunning: boolean }, ref) => {
+const MusicTracks = forwardRef(({ sessionRunning, setCurrentMusic }: { sessionRunning: boolean; setCurrentMusic?: (music: string[]) => void }, ref) => {
   const [currentTrack, setCurrentTrack] = useState<number | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -74,7 +74,13 @@ const MusicTracks = forwardRef(({ sessionRunning }: { sessionRunning: boolean },
   }, [sessionRunning, currentTrack]);
 
   const playTrack = (index: number) => {
-    setCurrentTrack((prev) => (prev === index ? null : index));
+    setCurrentTrack((prev) => {
+      const newTrack = prev === index ? null : index;
+      if (setCurrentMusic) {
+        setCurrentMusic(newTrack !== null ? [calmTracks[newTrack].name] : []);
+      }
+      return newTrack;
+    });
   };
 
   const toggleMute = () => {

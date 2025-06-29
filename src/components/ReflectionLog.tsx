@@ -22,12 +22,8 @@ type Entry = {
 
 type EditableEntry = Omit<Entry, 'date'> & { date?: Date };
 
-type Props = {
-  entries: Entry[];
-};
-
-export default function ReflectionLog({ entries }: Props) {
-  const { updateReflection, deleteReflection } = useReflections();
+export default function ReflectionLog() {
+  const { reflections, loading, updateReflection, deleteReflection } = useReflections();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editState, setEditState] = useState<EditableEntry | null>(null);
@@ -87,7 +83,18 @@ export default function ReflectionLog({ entries }: Props) {
     }
   };
 
-  if (!entries.length) {
+  if (loading) {
+    return (
+      <SoftCard className="animate-fade-in">
+        <SectionHeading title="Reflection Log" />
+        <div className="text-muted-foreground text-sm p-4 text-center">
+          Loading your reflections...
+        </div>
+      </SoftCard>
+    );
+  }
+
+  if (!reflections.length) {
     return (
       <SoftCard className="animate-fade-in">
         <SectionHeading title="Reflection Log" />
@@ -120,7 +127,7 @@ export default function ReflectionLog({ entries }: Props) {
             </tr>
           </thead>
           <tbody>
-            {entries.map((entry, idx) => (
+            {reflections.map((entry, idx) => (
               <React.Fragment key={idx}>
                 {editIndex === idx ? (
                   <tr className="bg-sky-50">
@@ -162,7 +169,15 @@ export default function ReflectionLog({ entries }: Props) {
                         onChange={e => handleEditChange('well', e.target.value)}
                       />
                     </td>
-                    <td></td>
+                    <td>
+                      <button
+                        className="text-xs text-blue-500 hover:underline flex items-center"
+                        onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
+                        aria-label={expandedIndex === idx ? "Collapse" : "Expand"}
+                      >
+                        {expandedIndex === idx ? <ArrowUp size={16}/> : <ArrowDown size={16}/>} 
+                      </button>
+                    </td>
                     <td className="flex gap-2">
                       <Button size="sm" variant="default" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
                       <Button size="sm" variant="outline" onClick={cancelEdit}>Cancel</Button>

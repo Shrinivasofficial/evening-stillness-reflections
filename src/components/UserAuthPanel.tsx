@@ -120,12 +120,12 @@ export default function UserAuthPanel() {
     e.preventDefault();
   
     if (emailValidationState !== 'valid') {
-      showNotification("📮 Please enter a valid email address.", "info");
+      showNotification("\ud83d\udcec Please enter a valid email address.", "info");
       return;
     }
   
     if (password.length < 6) {
-      showNotification("🔒 Password must be at least 6 characters long.", "info");
+      showNotification("\ud83d\udd12 Password must be at least 6 characters long.", "info");
       return;
     }
   
@@ -136,22 +136,32 @@ export default function UserAuthPanel() {
         email,
         password,
         options: {
-          emailRedirectTo: "https://evening-stillness-reflections.vercel.app/", // 👈 must be allowed in Supabase settings
+          emailRedirectTo: "https://evening-stillness-reflections.vercel.app/",
         },
       });
   
       if (error) {
-        console.error("Sign up error:", error);
-        showNotification("⚠️ " + error.message, "info");
+        const msg = error.message.toLowerCase();
+        if (
+          msg.includes("user already registered") ||
+          msg.includes("user already exists") ||
+          msg.includes("email already registered")
+        ) {
+          showNotification("you're already registered! please sign in instead.", "info");
+        } else {
+          showNotification("\u26a0\ufe0f " + error.message, "info");
+        }
+      } else if (!data.user) {
+        showNotification("you're already registered! please sign in instead.", "info");
       } else {
-        showNotification("📧 A verification link has been sent to your inbox. Please verify your email before logging in.", "info");
+        showNotification("\ud83d\udce7 A verification link has been sent to your inbox. Please verify your email before logging in.", "info");
         setEmail("");
         setPassword("");
         setEmailValidationState("idle");
       }
     } catch (error: any) {
       console.error("Unexpected sign up error:", error);
-      showNotification("❌ An unexpected error occurred. Please try again.", "info");
+      showNotification("\u274c An unexpected error occurred. Please try again.", "info");
     }
   
     setLoading(false);

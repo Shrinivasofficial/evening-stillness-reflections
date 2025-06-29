@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import WelcomeSection from "./WelcomeSection";
 import ReflectionForm from "./ReflectionForm";
@@ -146,8 +145,8 @@ export default function EveningReflectionDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-12 items-start w-full">
           <div className="space-y-10">
             <ReflectionForm onSave={handleSave} />
-            <WeeklySummary entries={reflections} />
-            <ReflectionLog entries={reflections} />
+            <WeeklySummary />
+            <ReflectionLog />
           </div>
           <div className="space-y-8">
             <QuickLinksPanel />

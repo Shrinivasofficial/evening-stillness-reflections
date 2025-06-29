@@ -68,6 +68,7 @@ export default function ReflectionForm({ onSave, initialEntry }: ReflectionFormP
   const [again, setAgain] = useState(initialEntry?.again ?? "");
   const [tags, setTags] = useState<string[]>(initialEntry?.tags ?? []);
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { notification, showNotification, hideNotification } =
     usePositiveNotification();
 
@@ -83,7 +84,18 @@ export default function ReflectionForm({ onSave, initialEntry }: ReflectionFormP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double submission
+    if (isSubmitting || loading) {
+      console.log('Form submission blocked - already submitting');
+      return;
+    }
+    
+    setIsSubmitting(true);
     setLoading(true);
+    
+    console.log('=== FORM SUBMISSION START ===');
+    
     const entry: ReflectionEntry = {
       date,
       mood,
@@ -92,6 +104,9 @@ export default function ReflectionForm({ onSave, initialEntry }: ReflectionFormP
       again: again.trim(),
       tags,
     };
+    
+    console.log('Form entry to save:', entry);
+    
     try {
       await onSave(entry);
       showNotification("Reflection saved successfully");
@@ -105,8 +120,11 @@ export default function ReflectionForm({ onSave, initialEntry }: ReflectionFormP
     } catch (error) {
       console.error("Error saving reflection:", error);
       showNotification("Failed to save reflection. Please try again.", "info");
+    } finally {
+      setLoading(false);
+      setIsSubmitting(false);
+      console.log('=== FORM SUBMISSION END ===');
     }
-    setLoading(false);
   };
 
   return (
