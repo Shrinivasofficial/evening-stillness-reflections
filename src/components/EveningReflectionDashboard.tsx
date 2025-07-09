@@ -24,6 +24,26 @@ export default function EveningReflectionDashboard() {
     }
   }
 
+  // DEV ONLY: Add test reflection streak logs
+  const isDev = import.meta.env?.MODE === 'development' || process.env.NODE_ENV === 'development';
+
+  const addTestReflectionStreak = async (days: number) => {
+    const today = new Date();
+    for (let i = 0; i < days; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      await saveReflection({
+        date,
+        mood: 3,
+        well: `Test well ${i+1}`,
+        short: `Test short ${i+1}`,
+        again: `Test again ${i+1}`,
+        tags: ['test'],
+      });
+    }
+    // Optionally show a notification here if you want
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/30 to-blue-50/20">

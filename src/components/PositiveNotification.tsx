@@ -52,12 +52,37 @@ export default function PositiveNotification({
     }
   }, [isVisible, onClose, type, milestone]);
 
-  if (!isVisible && !show) return null;
-
   const getPositiveMessage = (originalMessage: string) => {
     const normalized = originalMessage.toLowerCase().trim();
     return positiveMessages[normalized] || originalMessage;
   };
+
+  if (!isVisible && !show) return null;
+
+  // Full-screen celebration for milestone
+  if (milestone && isVisible) {
+    return (
+      <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/60 transition-all duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
+        style={{backdropFilter: 'blur(2px)'}}>
+        <div className="bg-white rounded-3xl shadow-2xl p-10 flex flex-col items-center max-w-lg w-full border-4 border-yellow-300 animate-pop-in">
+          <div className="text-7xl mb-4 animate-bounce">🎉</div>
+          <h2 className="text-3xl font-extrabold text-yellow-600 mb-2 text-center">Congratulations!</h2>
+          <p className="text-xl text-gray-800 mb-6 text-center">{getPositiveMessage(message)}</p>
+          <Button
+            variant="default"
+            size="lg"
+            onClick={() => {
+              setShow(false);
+              setTimeout(onClose, 300);
+            }}
+            className="px-8 py-3 text-lg font-semibold rounded-full bg-yellow-400 hover:bg-yellow-500 text-white shadow-lg"
+          >
+            Close
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const getIcon = () => {
     return type === 'info'

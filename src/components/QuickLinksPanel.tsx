@@ -49,6 +49,23 @@ export default function QuickLinksPanel() {
     }
   };
 
+  // DEV ONLY: Add test streak logs
+  const isDev = import.meta.env?.MODE === 'development' || process.env.NODE_ENV === 'development';
+
+  const addTestStreak = async (days: number) => {
+    const today = new Date();
+    for (let i = 0; i < days; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      await saveMeditationLog({
+        date: date.toISOString().split('T')[0],
+        duration: 600, // 10 min
+        music: [],
+      });
+    }
+    showNotification(`${days}-day test streak logs added!`, 'success');
+  };
+
   return (
     <div className="space-y-6">
       <SoftCard className="animate-fade-in">
