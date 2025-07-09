@@ -130,15 +130,20 @@ export function useReflections() {
             const rDate = r.date instanceof Date ? format(r.date, 'yyyy-MM-dd') : r.date;
             return rDate !== dateString;
           });
-          
-          // Add the new/updated reflection at the beginning
+          // Add the new/updated reflection at the beginning, ensure date is a Date object
           return [{
             ...savedReflection,
             date: new Date(savedReflection.date),
             tags: savedReflection.tags || []
           }, ...filtered];
         });
+        return {
+          ...savedReflection,
+          date: new Date(savedReflection.date),
+          tags: savedReflection.tags || []
+        };
       }
+      return null;
     } catch (error) {
       console.error('Error saving reflection:', error);
       throw error;
@@ -197,4 +202,49 @@ export function useReflections() {
     refetch: fetchReflections,
     isAuthenticated
   };
+}
+
+// Utility to calculate current and longest streaks for reflections
+type StreakInfo = { currentStreak: number; longestStreak: number };
+
+export function getReflectionStreakInfo(reflections: Reflection[]): StreakInfo {
+  if (!reflections.length) return { currentStreak: 0, longestStreak: 0 };
+  const sorted = [...reflections].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const dates = sorted.map(r => new Date(r.date).toDateString());
+  let currentStreak = 0;
+  let longestStreak = 0;
+  let tempStreak = 0;
+  const today = new Date();
+  let currentDate = new Date(today);
+  // Calculate current streak
+  for (let i = 0; i < 365; i++) {
+    const dateStr = currentDate.toDateString();
+    if (dates.includes(dateStr)) {
+      currentStreak++;
+      tempStreak++;
+    } else {
+      break;
+    }
+    currentDate.setDate(currentDate.getDate() - 1);
+  }
+  // Calculate longest streak
+  tempStreak = 0;
+  for (let i = 0; i < dates.length; i++) {
+    const currentDate = new Date(dates[i]);
+    const nextDate = i < dates.length - 1 ? new Date(dates[i + 1]) : null;
+    if (nextDate) {
+      const diffTime = currentDate.getTime() - nextDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) {
+        tempStreak++;
+      } else {
+        longestStreak = Math.max(longestStreak, tempStreak + 1);
+        tempStreak = 0;
+      }
+    } else {
+      tempStreak++;
+      longestStreak = Math.max(longestStreak, tempStreak);
+    }
+  }
+  return { currentStreak, longestStreak };
 }

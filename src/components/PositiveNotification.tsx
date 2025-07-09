@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Check, X, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import confetti from "canvas-confetti";
 
 interface PositiveNotificationProps {
   message: string;
   isVisible: boolean;
   onClose: () => void;
   type?: 'success' | 'info';
+  milestone?: boolean; // NEW: if this is a milestone notification
 }
 
 const positiveMessages: Record<string, string> = {
@@ -26,20 +28,29 @@ export default function PositiveNotification({
   message, 
   isVisible, 
   onClose, 
-  type = 'success' 
+  type = 'success',
+  milestone = false // NEW
 }: PositiveNotificationProps) {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
     if (isVisible) {
       setShow(true);
+      // Confetti for milestone
+      if (milestone) {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.3 },
+        });
+      }
       const timer = setTimeout(() => {
         setShow(false);
         setTimeout(onClose, 300); // Wait for fade-out
       }, type === 'info' ? 6000 : 3000);
       return () => clearTimeout(timer);
     }
-  }, [isVisible, onClose, type]);
+  }, [isVisible, onClose, type, milestone]);
 
   if (!isVisible && !show) return null;
 

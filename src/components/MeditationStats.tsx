@@ -1,14 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SoftCard from "./SoftCard";
 import SectionHeading from "./SectionHeading";
-import { useMeditationLogs } from "../hooks/useMeditationLogs";
-import { 
-  Clock, 
-  Calendar, 
-  TrendingUp, 
-  Target, 
-  Award, 
-  Activity, 
+import type { MeditationStats as MeditationStatsType } from "../hooks/useMeditationLogs";
+import {
+  Clock,
+  Calendar,
+  TrendingUp,
+  Target,
+  Award,
+  Activity,
   Flame,
   Zap,
   Heart,
@@ -19,11 +19,86 @@ import {
   Pause,
   RotateCcw
 } from "lucide-react";
+import { usePositiveNotification } from "../hooks/usePositiveNotification";
+import PositiveNotification from "./PositiveNotification";
 
-export default function MeditationStats() {
-  const { meditationLogs, loading, calculateStats } = useMeditationLogs();
+type MeditationStatsProps = {
+  meditationLogs: any[];
+  loading: boolean;
+  calculateStats: () => MeditationStatsType;
+};
+
+export default function MeditationStats({ meditationLogs, loading, calculateStats }: MeditationStatsProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'insights' | 'progress'>('overview');
-  
+  const { notification, showNotification, hideNotification } = usePositiveNotification();
+  const [milestoneShown, setMilestoneShown] = useState<number | null>(null);
+  const MILESTONES = [5, 7, 10, 15, 30];
+
+  // Streak calculation logic
+  function getStreakInfo() {
+    if (!meditationLogs.length) return { currentStreak: 0, longestStreak: 0 };
+    const sortedLogs = [...meditationLogs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const dates = sortedLogs.map(log => new Date(log.date).toDateString());
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+    const today = new Date();
+    let currentDate = new Date(today);
+    // Calculate current streak
+    for (let i = 0; i < 365; i++) {
+      const dateStr = currentDate.toDateString();
+      if (dates.includes(dateStr)) {
+        currentStreak++;
+        tempStreak++;
+      } else {
+        break;
+      }
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+    // Calculate longest streak
+    tempStreak = 0;
+    for (let i = 0; i < dates.length; i++) {
+      const currentDate = new Date(dates[i]);
+      const nextDate = i < dates.length - 1 ? new Date(dates[i + 1]) : null;
+      if (nextDate) {
+        const diffTime = currentDate.getTime() - nextDate.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          tempStreak++;
+        } else {
+          longestStreak = Math.max(longestStreak, tempStreak + 1);
+          tempStreak = 0;
+        }
+      } else {
+        tempStreak++;
+        longestStreak = Math.max(longestStreak, tempStreak);
+      }
+    }
+    return { currentStreak, longestStreak };
+  }
+
+  const { currentStreak, longestStreak } = getStreakInfo();
+  const isMilestone = MILESTONES.includes(currentStreak);
+
+  // Show milestone notification only once per milestone per session
+  useEffect(() => {
+    if (isMilestone && milestoneShown !== currentStreak) {
+      let message = `🎉 ${currentStreak}-Day Meditation Streak! You’re on fire!`;
+      if (currentStreak === 5) {
+        message = "🌟 5-Day Streak! You’re building a beautiful habit!";
+      } else if (currentStreak === 7) {
+        message = "✨ 7-Day Streak! One mindful week complete!";
+      } else if (currentStreak === 10) {
+        message = "🏅 10-Day Streak! Double digits! Your dedication shines.";
+      }
+      showNotification(
+        message,
+        'success'
+      );
+      setMilestoneShown(currentStreak);
+    }
+  }, [isMilestone, currentStreak, milestoneShown, showNotification]);
+
   if (loading) {
     return (
       <SoftCard className="animate-fade-in">
@@ -66,12 +141,11 @@ export default function MeditationStats() {
   }
 
   const stats = calculateStats();
-  
+
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
-    
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     } else if (minutes > 0) {
@@ -90,59 +164,6 @@ export default function MeditationStats() {
     return `${minutes}m ${remainingSeconds}s`;
   };
 
-  const getStreakInfo = () => {
-    if (!meditationLogs.length) return { currentStreak: 0, longestStreak: 0 };
-    
-    const sortedLogs = [...meditationLogs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const dates = sortedLogs.map(log => new Date(log.date).toDateString());
-    
-    let currentStreak = 0;
-    let longestStreak = 0;
-    let tempStreak = 0;
-    
-    const today = new Date();
-    let currentDate = new Date(today);
-    
-    // Calculate current streak
-    for (let i = 0; i < 365; i++) {
-      const dateStr = currentDate.toDateString();
-      if (dates.includes(dateStr)) {
-        currentStreak++;
-        tempStreak++;
-      } else {
-        break;
-      }
-      currentDate.setDate(currentDate.getDate() - 1);
-    }
-    
-    // Calculate longest streak
-    tempStreak = 0;
-    for (let i = 0; i < dates.length; i++) {
-      const currentDate = new Date(dates[i]);
-      const nextDate = i < dates.length - 1 ? new Date(dates[i + 1]) : null;
-      
-      if (nextDate) {
-        const diffTime = currentDate.getTime() - nextDate.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 1) {
-          tempStreak++;
-        } else {
-          longestStreak = Math.max(longestStreak, tempStreak + 1);
-          tempStreak = 0;
-        }
-      } else {
-        tempStreak++;
-        longestStreak = Math.max(longestStreak, tempStreak);
-      }
-    }
-    
-    return { currentStreak, longestStreak };
-  };
-
-  const { currentStreak, longestStreak } = getStreakInfo();
-
-  // Calculate progress percentages
   const weeklyProgress = Math.min((stats.sessionsThisWeek / 7) * 100, 100);
   const monthlyProgress = Math.min((stats.sessionsThisMonth / 30) * 100, 100);
   const streakProgress = Math.min((currentStreak / Math.max(longestStreak, 1)) * 100, 100);
@@ -159,6 +180,13 @@ export default function MeditationStats() {
 
   return (
     <SoftCard className="animate-fade-in overflow-hidden">
+      <PositiveNotification
+        message={notification.message}
+        isVisible={notification.isVisible}
+        onClose={hideNotification}
+        type={notification.type}
+        milestone={isMilestone && milestoneShown === currentStreak}
+      />
       {/* Header with Achievement Badge */}
       <div className="relative mb-6">
         <div className="flex items-center justify-between">
@@ -178,7 +206,7 @@ export default function MeditationStats() {
         <div className="mt-3 flex items-center gap-2">
           <span className="text-sm font-medium text-gray-700">{achievement.level}</span>
           <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-sky-500 to-blue-600 rounded-full transition-all duration-1000 ease-out"
               style={{ width: `${Math.min((stats.totalSessions / 100) * 100, 100)}%` }}
             ></div>
@@ -378,7 +406,7 @@ export default function MeditationStats() {
               <Zap className="w-5 h-5 text-yellow-500" />
               Smart Insights
             </h3>
-            
+
             <div className="space-y-3">
               {currentStreak > 0 && (
                 <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
@@ -389,7 +417,7 @@ export default function MeditationStats() {
                   </div>
                 </div>
               )}
-              
+
               {stats.sessionsThisWeek > stats.sessionsThisMonth / 4 && (
                 <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
                   <TrendingUp className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
@@ -399,7 +427,7 @@ export default function MeditationStats() {
                   </div>
                 </div>
               )}
-              
+
               {stats.averageDuration > 10 * 60 && (
                 <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-blue-50 to-sky-50 rounded-lg border border-blue-200">
                   <Clock className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
@@ -409,7 +437,7 @@ export default function MeditationStats() {
                   </div>
                 </div>
               )}
-              
+
               {stats.totalDuration > 60 * 60 && (
                 <div className="flex items-start gap-3 p-3 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg border border-purple-200">
                   <Heart className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
@@ -433,7 +461,7 @@ export default function MeditationStats() {
               <Target className="w-5 h-5 text-green-600" />
               Time Breakdown
             </h3>
-            
+
             <div className="space-y-3">
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg border border-sky-200">
                 <div className="flex items-center gap-3">
@@ -450,7 +478,7 @@ export default function MeditationStats() {
                   <p className="text-xs text-gray-500">total time</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
@@ -466,7 +494,7 @@ export default function MeditationStats() {
                   <p className="text-xs text-gray-500">total time</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg border border-purple-200">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
@@ -482,7 +510,7 @@ export default function MeditationStats() {
                   <p className="text-xs text-gray-500">duration</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
@@ -513,7 +541,7 @@ export default function MeditationStats() {
                 <span className="text-sm font-medium text-gray-800">{Math.max(0, 100 - stats.totalSessions)} more</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full transition-all duration-1000 ease-out"
                   style={{ width: `${Math.min((stats.totalSessions / 100) * 100, 100)}%` }}
                 ></div>

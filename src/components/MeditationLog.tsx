@@ -3,13 +3,19 @@ import SoftCard from "./SoftCard";
 import SectionHeading from "./SectionHeading";
 import { format as formatDate } from "date-fns";
 import { Button } from "./ui/button";
-import { useMeditationLogs } from "../hooks/useMeditationLogs";
+import type { MeditationLog as MeditationLogType } from "../hooks/useMeditationLogs";
 import { usePositiveNotification } from "../hooks/usePositiveNotification";
 import PositiveNotification from "./PositiveNotification";
 import { Clock, Music, Calendar, Trash2 } from "lucide-react";
 
-export default function MeditationLog() {
-  const { meditationLogs, loading, error, deleteMeditationLog } = useMeditationLogs();
+type MeditationLogProps = {
+  meditationLogs: MeditationLogType[];
+  loading: boolean;
+  error: string | null;
+  deleteMeditationLog: (id: string) => Promise<void>;
+};
+
+export default function MeditationLog({ meditationLogs, loading, error, deleteMeditationLog }: MeditationLogProps) {
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
   const { notification, showNotification, hideNotification } = usePositiveNotification();
 

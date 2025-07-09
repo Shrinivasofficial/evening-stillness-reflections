@@ -3,12 +3,12 @@ import SoftCard from "./SoftCard";
 import SectionHeading from "./SectionHeading";
 import { format as formatDate, parseISO } from "date-fns";
 import { ArrowDown, ArrowUp } from "lucide-react";
-import { useReflections } from "../hooks/useReflections";
 import ReflectionForm from "./ReflectionForm";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { usePositiveNotification } from "../hooks/usePositiveNotification";
 import PositiveNotification from "./PositiveNotification";
+import { getReflectionStreakInfo } from "../hooks/useReflections";
 
 type Entry = {
   id: string;
@@ -22,14 +22,37 @@ type Entry = {
 
 type EditableEntry = Omit<Entry, 'date'> & { date?: Date };
 
-export default function ReflectionLog() {
-  const { reflections, loading, updateReflection, deleteReflection } = useReflections();
+export default function ReflectionLog({ reflections, loading, user, isAuthenticated, updateReflection, deleteReflection }: {
+  reflections: any[],
+  loading: boolean,
+  user: any,
+  isAuthenticated: boolean,
+  updateReflection: Function,
+  deleteReflection: Function
+}) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editState, setEditState] = useState<EditableEntry | null>(null);
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const { notification, showNotification, hideNotification } = usePositiveNotification();
+  const [milestoneShown, setMilestoneShown] = useState<number | null>(null); // NEW
+
+  // Milestone streaks
+  const MILESTONES = [5, 7, 10, 15, 30];
+  const { currentStreak } = getReflectionStreakInfo(reflections);
+  const isMilestone = MILESTONES.includes(currentStreak);
+
+  // Show milestone notification only once per milestone per session
+  React.useEffect(() => {
+    if (isMilestone && milestoneShown !== currentStreak) {
+      showNotification(
+        `🎉 ${currentStreak}-Day Reflection Streak! Keep shining your light!`,
+        'success'
+      );
+      setMilestoneShown(currentStreak);
+    }
+  }, [isMilestone, currentStreak, milestoneShown, showNotification, reflections]);
 
   const startEdit = (idx: number, entry: Entry) => {
     setEditIndex(idx);
@@ -53,14 +76,7 @@ export default function ReflectionLog() {
     if (editIndex === null || !editState) return;
     setSaving(true);
     try {
-      await updateReflection(editState.id!, {
-        mood: editState.mood,
-        well: editState.well,
-        short: editState.short,
-        again: editState.again,
-        tags: editState.tags,
-        date: editState.date instanceof Date ? formatDate(editState.date, 'yyyy-MM-dd') : undefined,
-      });
+      await updateReflection(editState.id!, { ...editState, date: editState.date instanceof Date ? formatDate(editState.date, 'yyyy-MM-dd') : undefined });
       setEditIndex(null);
       setEditState(null);
       showNotification('Reflection updated successfully', 'success');
@@ -113,6 +129,7 @@ export default function ReflectionLog() {
         isVisible={notification.isVisible}
         onClose={hideNotification}
         type={notification.type}
+        milestone={isMilestone && milestoneShown === currentStreak}
       />
       <div className="overflow-x-auto">
         <table className="w-full text-left">

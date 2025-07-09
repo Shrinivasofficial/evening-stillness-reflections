@@ -20,6 +20,7 @@ export interface MeditationStats {
   totalDurationThisMonth: number;
 }
 
+export type { MeditationLog };
 export function useMeditationLogs() {
   const [meditationLogs, setMeditationLogs] = useState<MeditationLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,6 +71,9 @@ export function useMeditationLogs() {
     }
   };
 
+  /**
+   * Save a meditation log and refresh the logs list after successful insert.
+   */
   const saveMeditationLog = async (log: InsertMeditationLog) => {
     if (!user || !isAuthenticated) {
       throw new Error("Not authenticated");
@@ -101,7 +105,8 @@ export function useMeditationLogs() {
       }
       
       if (data && data.length > 0) {
-        setMeditationLogs(prev => [data[0], ...prev]);
+        // Instead of just updating local state, refetch to ensure all consumers are up to date
+        await fetchMeditationLogs();
         return data[0];
       } else {
         throw new Error('No data returned from insert');

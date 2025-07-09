@@ -14,7 +14,7 @@ export default function QuickLinksPanel() {
   const [sessionCompleted, setSessionCompleted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const musicRef = useRef<{ stop: () => void } | null>(null);
-  const { saveMeditationLog } = useMeditationLogs();
+  const { saveMeditationLog, meditationLogs, loading, error, deleteMeditationLog, calculateStats } = useMeditationLogs();
   const { showNotification } = usePositiveNotification();
 
   const handleSessionEnd = async () => {
@@ -63,8 +63,17 @@ export default function QuickLinksPanel() {
         </div>
       </SoftCard>
       
-      <MeditationStats />
-      <MeditationLog />
+      <MeditationStats 
+        meditationLogs={meditationLogs}
+        loading={loading}
+        calculateStats={calculateStats}
+      />
+      <MeditationLog 
+        meditationLogs={meditationLogs}
+        loading={loading}
+        error={error}
+        deleteMeditationLog={deleteMeditationLog}
+      />
     </div>
   );
 }

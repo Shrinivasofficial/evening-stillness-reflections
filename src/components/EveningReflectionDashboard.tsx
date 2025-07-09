@@ -12,7 +12,7 @@ import { Loader2 } from "lucide-react";
 import BuddhaAnimation from "./BuddhaAnimation";
 
 export default function EveningReflectionDashboard() {
-  const { reflections, loading, saveReflection, user, isAuthenticated } = useReflections();
+  const { reflections, loading, saveReflection, updateReflection, deleteReflection, user, isAuthenticated } = useReflections();
   const [showAuth, setShowAuth] = useState(false);
 
   async function handleSave(entry: any) {
@@ -146,7 +146,14 @@ export default function EveningReflectionDashboard() {
           <div className="space-y-10">
             <ReflectionForm onSave={handleSave} />
             <WeeklySummary />
-            <ReflectionLog />
+            <ReflectionLog 
+              reflections={reflections}
+              loading={loading}
+              user={user}
+              isAuthenticated={isAuthenticated}
+              updateReflection={updateReflection}
+              deleteReflection={deleteReflection}
+            />
           </div>
           <div className="space-y-8">
             <QuickLinksPanel />
