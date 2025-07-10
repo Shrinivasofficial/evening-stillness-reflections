@@ -166,6 +166,7 @@ export default function EveningReflectionDashboard() {
           <div className="space-y-10">
             <ReflectionForm onSave={handleSave} />
             <WeeklySummary />
+
             <ReflectionLog 
               reflections={reflections}
               loading={loading}
